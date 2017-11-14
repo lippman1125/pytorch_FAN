@@ -60,7 +60,7 @@ function Trainer:train(epoch, dataloader)
                 self.model:backward(self.input,self.criterion.gradInput)
 
                 optim.rmsprop(feval, self.params, self.optimState)
-                
+
                 avgLoss = avgLoss + loss
                 N = N + 1
 
@@ -98,7 +98,7 @@ function Trainer:copyInputs(sample)
     self.input:resize(sample.input[{{},{},{},{}}]:size()):copy(sample.input[{{},{},{},{}}])
     label:resize(sample.label:size()):copy(sample.label)
 
-    -- Adjust the input accordingly to the network arhitecture 
+    -- Adjust the input accordingly to the network arhitecture
     if self.opt.nStacks>1 then
         local tempLabel = {}
         for i=1,self.opt.nStacks do
@@ -106,12 +106,9 @@ function Trainer:copyInputs(sample)
         end
 
         self.label = tempLabel
-    else 
+    else
         self.label = label
     end
 end
 
 return M.Trainer
-
-
-
