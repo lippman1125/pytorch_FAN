@@ -1,22 +1,22 @@
 # Pytorch version of 'How far are we from solving the 2D \& 3D Face Alignment problem? (and a dataset of 230,000 3D facial landmarks)'
 
-For official torch7 version please refer to [github](https://github.com/1adrianb/face-alginment-training)
+For official torch7 version please refer to [face-alignment-training](https://github.com/1adrianb/face-alignment-training)
 
-This is the reinplement of training code for 2D-FAN and 3D-FAN decribed in "How far" paper. Please visit [author's](https://www.adrianbulat.com) webpage or [arxiv](https://arxiv.org/abs/) for tech details.
+This is the reinplement of training code for 2D-FAN and 3D-FAN decribed in "How far" paper. Please visit [author's webpage](https://www.adrianbulat.com) or [arxiv](https://arxiv.org/abs/1703.07332) for technical details.
 
-Thanks for bear's prior work on pose estimation work, [pytorch-pose](https://github.com/bearpaw/pytorch-pose). And in this project, I reused branch of utils function from pytorch-pose.
+Thanks for bearpaw's excellent work on human pose estimation [pytorch-pose](https://github.com/bearpaw/pytorch-pose). And in this project, I reused a branch of helper function from pytorch-pose.
 
 Pretrained models are available soon.
 
 ## Requirments
 
-- Install the latest [PyTorch](http://pytorch.org) version.
+- Install the latest [PyTorch](http://pytorch.org), version 0.2.1 is fully supported and there is no further test on older version.
 
 ### Packages
 
-- [scipy](https://github.com/torch/cutorch)
-- [torchvision](https://github.com/torch/nn)
-- [progress](https://link.com)
+- [scipy](https://www.scipy.org/)
+- [torchvision](https://pytorch.org)
+- [progress](https://pypi.python.org/pypi/progress)(optional) for better visualization.
 
 ## Setup
 
@@ -49,9 +49,9 @@ python main.py --help
 ## What's different?
 
 - Add 300-W-LP test set for validation.
-- Followed the excatly training procedur describle in the paper (except binary network part).
-- Add experiments evaluation in terms of **Mean error**, **AUC@0.07**
-- TODO: add evaluation on test sets(300W, 300VW, AFLW2000-3D)
+- Followed the excatly same training procedure described in the paper (except binary network part).
+- Add model evaluation in terms of **Mean error**, **AUC@0.07**
+- TODO: add evaluation on test sets (300W, 300VW, AFLW2000-3D etc.).
 
 ## Citation
 
