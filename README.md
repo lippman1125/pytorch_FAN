@@ -2,7 +2,7 @@
 
 For official torch7 version please refer to [face-alignment-training](https://github.com/1adrianb/face-alignment-training)
 
-This is the reinplement of training code for 2D-FAN and 3D-FAN decribed in "How far" paper. Please visit [author's webpage](https://www.adrianbulat.com) or [arxiv](https://arxiv.org/abs/1703.07332) for technical details.
+This is a reinplement of training code for 2D-FAN and 3D-FAN decribed in "How far" paper. Please visit [author's webpage](https://www.adrianbulat.com) or [arxiv](https://arxiv.org/abs/1703.07332) for technical details.
 
 Thanks for bearpaw's excellent work on human pose estimation [pytorch-pose](https://github.com/bearpaw/pytorch-pose). And in this project, I reused a branch of helper function from pytorch-pose.
 
