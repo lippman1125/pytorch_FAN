@@ -1,27 +1,22 @@
-# How far are we from solving the 2D \& 3D Face Alignment problem? (and a dataset of 230,000 3D facial landmarks)
+# Pytorch version of 'How far are we from solving the 2D \& 3D Face Alignment problem? (and a dataset of 230,000 3D facial landmarks)'
 
-This is the training code for 2D-FAN and 3D-FAN decribed in "How far are we from solving the 2D \& 3D Face Alignment problem? (and a dataset of 230,000 3D facial landmarks)" paper. Please visit [our](https://www.adrianbulat.com) webpage or read bellow for instructions on how to run the code.
+For official torch7 version please refer to [github](https://github.com/1adrianb/face-alginment-training)
 
-Pretrained models are available on our page.
+This is the reinplement of training code for 2D-FAN and 3D-FAN decribed in "How far" paper. Please visit [author's](https://www.adrianbulat.com) webpage or [arxiv](https://arxiv.org/abs/) for tech details.
 
-**Demo code: <https://www.github.com/1adrianb/2D-and-3D-face-alignment>**
+Thanks for bear's prior work on pose estimation work, [pytorch-pose](https://github.com/bearpaw/pytorch-pose). And in this project, I reused branch of utils function from pytorch-pose.
 
-Note: If you are interested in a binarized version, capable of running on devices with limited resources please also check <https://github.com/1adrianb/binary-face-alignment> for a demo.
+Pretrained models are available soon.
 
 ## Requirments
 
-- Install the latest [Torch7](http://torch.ch/docs/getting-started.html) version (for Windows, please follow the instructions available [here](https://github.com/torch/distro/blob/master/win-files/README.md))
+- Install the latest [PyTorch](http://pytorch.org) version.
 
 ### Packages
 
-- [cutorch](https://github.com/torch/cutorch)
-- [nn](https://github.com/torch/nn)
-- [nngraph](https://github.com/torch/nngraph)
-- [cudnn](https://github.com/soumith/cudnn.torch)
-- [xlua](https://github.com/torch/xlua)
-- [image](https://github.com/torch/image)
-- [paths](https://github.com/torch/paths)
-- [matio](https://github.com/soumith/matio-ffi.torch)
+- [scipy](https://github.com/torch/cutorch)
+- [torchvision](https://github.com/torch/nn)
+- [progress](https://link.com)
 
 ## Setup
 
@@ -29,27 +24,34 @@ Note: If you are interested in a binarized version, capable of running on device
 
 ```bash
 
-git  clone https://github.com/1adrianb/face-alignment-training
-cd face-alignment-training
+git  clone https://github.com/hzh8311/pyhowfar
+cd pyhowfar
 ```
 
 2. Download the 300W-LP dataset from the authors webpage. In order to train on your own data the dataloader.lua file needs to be adapted.
 
-3. Download the 300W-LP annotations converted to t7 format from [here](https://www.adrianbulat.com/downloads/FaceAlignment/landmarks.zip), extract it and move the ```landmarks``` folder to the root of the 300W-LP dataset.
+3. Download the 300W-LP annotations converted to t7 format by paper author from [here](https://www.adrianbulat.com/downloads/FaceAlignment/landmarks.zip), extract it and move the ```landmarks``` folder to the root of the 300W-LP dataset.
 
 ## Usage
 
 In order to run the demo please download the required models available bellow and the associated data.
 
 ```bash
-th main.lua -data path_to_300W_LP_dataset
+python main.py
 ```
 
 In order to see all the available options please run:
 
 ```bash
-th main.lua --help
+python main.py --help
 ```
+
+## What's different?
+
+- Add 300-W-LP test set for validation.
+- Followed the excatly training procedur describle in the paper (except binary network part).
+- Add experiments evaluation in terms of **Mean error**, **AUC@0.07**
+- TODO: add evaluation on test sets(300W, 300VW, AFLW2000-3D)
 
 ## Citation
 
@@ -61,7 +63,3 @@ th main.lua --help
   year={2017}
 }
 ```
-
-## Acknowledgements
-
-This pipeline is build around the ImageNet training code avaialable at <https://github.com/facebook/fb.resnet.torch> and HourGlass(HG) code available at https://github.com/anewell/pose-hg-train
