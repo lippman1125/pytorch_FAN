@@ -49,12 +49,14 @@ def dist_acc(dists, thr=0.5):
     else:
         return -1
 
-def calc_metrics(dists, show_curve=False):
+def calc_metrics(dists, show_curve=False, path=None):
     errors = torch.mean(dists, 0).view(dists.size(1))
     axes1 = np.linspace(0,1,1000)
     axes2 = np.zeros(1000)
     for i in range(1000):
         axes2[i] = (errors < axes1[i]).sum()/float(errors.shape[0])
+
+    auc = round(np.sum(axes2[:70]) / .7, 2)
 
     if show_curve:
         plt.xlim(0, 7)
@@ -66,11 +68,10 @@ def calc_metrics(dists, show_curve=False):
         plt.title('NME (%)', fontsize=20)
         plt.xlabel('NME (%)', fontsize=16)
         plt.ylabel('Test images (%)', fontsize=16)
-        plt.plot(axes1 * 100, axes2 * 100, 'b-', label='FAN', lw=3)
+        plt.plot(axes1 * 100, axes2 * 100, 'b-', label='FAN ('+str(auc) + ')', lw=3)
         plt.legend(loc=4, fontsize=16)
 
-        plt.show()
-    auc = np.sum(axes2[:70]) / 70.
+        plt.savefig(os.path.join(path + '/CED.eps'))
     return auc
 
 def _get_bboxsize(iterable):

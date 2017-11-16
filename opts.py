@@ -28,6 +28,8 @@ def argparser():
         '--pointType', type=str, default='2D', choices=['2D', '3D'], help='2D or 3D face alignment')
     P.add_argument('--nModules', type=int, default=1, help='number of modules per level')
     P.add_argument('--nStacks', type=int, default=4, help='number of stacked network(s)')
+    P.add_argument('--use-se', action='store_true', help='use SE layer or not')
+    P.add_argument('--use-attention', action='store_true', help='use SE layer or not')
     P.add_argument(
         '--schedule', type=int, nargs="+", default=[15, 30], help='adjust lr at this epoch')
     P.add_argument('--gamma', type=float, default=0.1, help='lr decay')
@@ -38,6 +40,7 @@ def argparser():
     P.add_argument('--scale-factor', type=float, default=0.3, help='scaling factor')
     P.add_argument('--rot-factor', type=float, default=30, help='rotation factor(in degrees)')
     P.add_argument('-e', '--evaluation', action='store_true', help='show intermediate results')
+    # P.add_argument('--reval', type=float, default='checkpoint/fan3d/300W-LP')
     P.add_argument('--debug', action='store_true', help='show intermediate results')
     P.add_argument('--flip', action='store_true', help='Flip input image')
     P.add_argument(

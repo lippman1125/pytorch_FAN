@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 import scipy.misc
+import os
 
 from .misc import *
 
@@ -20,6 +21,7 @@ def im_to_torch(img):
     return img
 
 def load_image(img_path):
+    assert os.path.isfile(img_path)
     # H x W x C => C x H x W
     return im_to_torch(scipy.misc.imread(img_path, mode='RGB'))
 

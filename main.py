@@ -12,7 +12,7 @@ import torch.optim
 import torchvision.datasets as datasets
 
 import models
-from datasets import W300LP
+from datasets import W300LP, VW300, AFLW2000
 from utils.logger import Logger, savefig
 from utils.imutils import batch_with_heatmap
 from utils.evaluation import accuracy, AverageMeter, final_preds, calc_metrics
@@ -28,6 +28,13 @@ model_names = sorted(
 best_acc = 0.
 idx = range(1, 69, 1)
 
+def get_loader(data):
+    return {
+        '300W_LP': W300LP,
+        'LS3D_W/300VW-3D': VW300,
+        'AFLW2000': AFLW2000,
+    }[data[5:]]
+
 
 def main(args):
     global best_acc
@@ -35,13 +42,13 @@ def main(args):
     if not os.path.exists(args.checkpoint):
         os.makedirs(args.checkpoint)
 
-    print("==> Creating model '{}', stacks={}, blocks={}".format(args.netType, args.nStacks,
-                                                                 args.nModules))
+    print("==> Creating model '{}-{}', stacks={}, blocks={}".format(args.netType, args.pointType,
+                                                                    args.nStacks, args.nModules))
 
     print("=> Models will be saved at: {}".format(args.checkpoint))
 
     model = models.__dict__[args.netType](
-        num_stacks=args.nStacks, num_blocks=args.nModules, num_classes=68)
+        num_stacks=args.nStacks, num_blocks=args.nModules, use_se=args.use_se, use_attention=args.use_attention, num_classes=68)
 
     model = torch.nn.DataParallel(model).cuda()
 
@@ -50,10 +57,12 @@ def main(args):
     optimizer = torch.optim.RMSprop(
         model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
 
-    title = "300-W-LP" + args.netType
+    title = args.data + args.netType
+
+    Loader = get_loader(args.data)
 
     val_loader = torch.utils.data.DataLoader(
-        W300LP(args, 'val'),
+        Loader(args, 'A'),
         batch_size=args.val_batch,
         shuffle=False,
         num_workers=args.workers,
@@ -75,12 +84,6 @@ def main(args):
         logger = Logger(os.path.join(args.checkpoint, 'log.txt'), title=title)
         logger.set_names(['Epoch', 'LR', 'Train Loss', 'Valid Loss', 'Train Acc', 'Val Acc'])
 
-    train_loader = torch.utils.data.DataLoader(
-        W300LP(args, 'train'),
-        batch_size=args.train_batch,
-        shuffle=True,
-        num_workers=args.workers,
-        pin_memory=True)
     cudnn.benchmark = True
     print('=> Total params: %.2fM' % (sum(p.numel() for p in model.parameters()) / (1024. * 1024)))
 
@@ -89,8 +92,16 @@ def main(args):
         loss, acc, predictions = validate(val_loader, model, criterion, args.netType, args.debug,
                                           args.flip)
         save_pred(predictions, checkpoint=args.checkpoint)
+        logger.plot(['Train Acc', 'Val Acc'])
+        savefig(os.path.join(args.checkpoint, 'log.eps'))
         return
 
+    train_loader = torch.utils.data.DataLoader(
+        Loader(args, 'train'),
+        batch_size=args.train_batch,
+        shuffle=True,
+        num_workers=args.workers,
+        pin_memory=True)
     lr = args.lr
     for epoch in range(args.start_epoch, args.epochs):
         lr = adjust_learning_rate(optimizer, epoch, lr, args.schedule, args.gamma)
@@ -99,8 +110,8 @@ def main(args):
         train_loss, train_acc = train(train_loader, model, criterion, optimizer, args.netType,
                                       args.debug, args.flip)
         # do not save predictions in model file
-        valid_loss, valid_acc, predictions = validate(val_loader, model, criterion, args.netType, args.debug,
-                                         args.flip)
+        valid_loss, valid_acc, predictions = validate(val_loader, model, criterion, args.netType,
+                                                      args.debug, args.flip)
 
         logger.append([int(epoch + 1), lr, train_loss, valid_loss, train_acc, valid_acc])
 
@@ -119,7 +130,7 @@ def main(args):
             checkpoint=args.checkpoint)
 
     logger.close()
-    logger.plot(['Train Acc', 'Valid Acc'])
+    logger.plot(['Train Acc', 'Val Acc'])
     savefig(os.path.join(args.checkpoint, 'log.eps'))
 
 

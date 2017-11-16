@@ -2,6 +2,8 @@
 luac.out
 *.lua
 *.pyc
+.ignore
+tags
 
 data/
 checkpoint

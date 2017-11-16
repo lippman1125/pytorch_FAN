@@ -5,11 +5,51 @@ Use lr=0.01 for current version
 '''
 import torch.nn as nn
 import torch.nn.functional as F
+from models.layers import SElayer, attentionCRF
 
 # from .preresnet import BasicBlock, Bottleneck
 
 __all__ = ['HourglassNet', 'fan']
 
+class SEBottleneck(nn.Module):
+    expansion = 2
+
+    def __init__(self, inplanes, planes, stride=1, downsample=None):
+        super(SEBottleneck, self).__init__()
+
+        self.bn1 = nn.BatchNorm2d(inplanes)
+        self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=1, bias=True)
+        self.bn2 = nn.BatchNorm2d(planes)
+        self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=stride, padding=1, bias=True)
+        self.bn3 = nn.BatchNorm2d(planes)
+        self.conv3 = nn.Conv2d(planes, planes * 2, kernel_size=1, bias=True)
+        self.relu = nn.ReLU(inplace=True)
+        self.downsample = downsample
+        self.stride = stride
+        self.se = SElayer(planes * 2, 16)
+
+    def forward(self, x):
+        residual = x
+
+        out = self.bn1(x)
+        out = self.relu(out)
+        out = self.conv1(out)
+
+        out = self.bn2(out)
+        out = self.relu(out)
+        out = self.conv2(out)
+
+        out = self.bn3(out)
+        out = self.relu(out)
+        out = self.conv3(out)
+        out = self.se(out)
+
+        if self.downsample is not None:
+            residual = self.downsample(x)
+
+        out += residual
+
+        return out
 
 class Bottleneck(nn.Module):
     expansion = 2
@@ -97,7 +137,7 @@ class Hourglass(nn.Module):
 class HourglassNet(nn.Module):
     '''Hourglass model from Newell et al ECCV 2016'''
 
-    def __init__(self, block, num_stacks=2, num_blocks=4, num_classes=16):
+    def __init__(self, block, num_stacks=2, num_blocks=4, use_attention=False, num_classes=16):
         super(HourglassNet, self).__init__()
 
         self.inplanes = 64
@@ -110,6 +150,10 @@ class HourglassNet(nn.Module):
         self.layer2 = self._make_residual(block, self.inplanes, 1)
         self.layer3 = self._make_residual(block, self.num_feats, 1)
         self.maxpool = nn.MaxPool2d(2, stride=2)
+        if use_attention:
+            self.attg = attentionCRF(self.num_feats * block.expansion, 3, 3, False)
+            self.attp = attentionCRF(self.num_feats * block.expansion, 3, 3, True)
+
 
         # build hourglass modules
         ch = self.num_feats * block.expansion
@@ -120,7 +164,17 @@ class HourglassNet(nn.Module):
             hg.append(Hourglass(block, num_blocks, self.num_feats, _depth))
             res.append(self._make_residual(block, self.num_feats, num_blocks))
             fc.append(self._make_fc(ch, ch))
-            score.append(nn.Conv2d(ch, num_classes, kernel_size=1, bias=True))
+
+            # attention part
+            if not use_attention:
+                score.append(nn.Conv2d(ch, num_classes, kernel_size=1, bias=True))
+            elif i <= 3:
+                score.append(attentionCRF(ch, 3, 3, False))
+                score.append(nn.Conv2d(ch, num_classes, 1, bias=True))
+            elif i > 3:
+                score.append(attentionCRF(ch, 3, 3, False))
+                score.append(attentionCRF(ch, 3, 3, True))
+
             if i < num_stacks - 1:
                 fc_.append(nn.Conv2d(ch, ch, kernel_size=1, bias=True))
                 score_.append(nn.Conv2d(num_classes, ch, kernel_size=1, bias=True))
@@ -184,9 +238,15 @@ class HourglassNet(nn.Module):
 
 
 def fan(**kwargs):
+    if kwargs['use_se']:
+        block = SEBottleneck
+    else:
+        block = Bottleneck
+
     model = HourglassNet(
-        Bottleneck,
+        block,
         num_stacks=kwargs['num_stacks'],
         num_blocks=kwargs['num_blocks'],
+        use_attention=kwargs['use_attention'],
         num_classes=kwargs['num_classes'])
     return model
