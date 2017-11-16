@@ -43,14 +43,15 @@ def main(args):
     if not os.path.exists(args.checkpoint):
         os.makedirs(args.checkpoint)
 
-    print("==> Creating model '{}-{}', stacks={}, blocks={}".format(args.netType, args.pointType,
-                                                                    args.nStacks, args.nModules))
+    print("==> Creating model '{}-{}', stacks={}, blocks={}, feats={}".format(
+        args.netType, args.pointType, args.nStacks, args.nModules, args.nFeats))
 
     print("=> Models will be saved at: {}".format(args.checkpoint))
 
     model = models.__dict__[args.netType](
         num_stacks=args.nStacks,
         num_blocks=args.nModules,
+        num_feats=args.nFeats,
         use_se=args.use_se,
         use_attention=args.use_attention,
         num_classes=68)
@@ -224,7 +225,7 @@ def validate(loader, model, criterion, netType, debug, flip):
 
     model.eval()
     gt_win, pred_win = None, None
-    # bar = Bar('Processing', max=len(loader))
+    bar = Bar('Processing', max=len(loader))
     all_dists = torch.zeros((68, loader.dataset.__len__()))
     for i, (inputs, target, meta) in enumerate(loader):
         data_time.update(time.time() - end)
@@ -273,18 +274,18 @@ def validate(loader, model, criterion, netType, debug, flip):
         batch_time.update(time.time() - end)
         end = time.time()
 
-    #     bar.suffix = '({batch}/{size}) Data: {data:.6f}s | Batch: {bt:.3f}s | Total: {total:} | ETA: {eta:} | Loss: {loss:.4f} | Acc: {acc: .4f}'.format(
-    #         batch=i + 1,
-    #         size=len(loader),
-    #         data=data_time.val,
-    #         bt=batch_time.val,
-    #         total=bar.elapsed_td,
-    #         eta=bar.eta_td,
-    #         loss=losses.avg,
-    #         acc=acces.avg)
-    #     bar.next()
+        bar.suffix = '({batch}/{size}) Data: {data:.6f}s | Batch: {bt:.3f}s | Total: {total:} | ETA: {eta:} | Loss: {loss:.4f} | Acc: {acc: .4f}'.format(
+            batch=i + 1,
+            size=len(loader),
+            data=data_time.val,
+            bt=batch_time.val,
+            total=bar.elapsed_td,
+            eta=bar.eta_td,
+            loss=losses.avg,
+            acc=acces.avg)
+        bar.next()
 
-    # bar.finish()
+    bar.finish()
     mean_error = torch.mean(all_dists)
     auc = calc_metrics(all_dists, show_curve=False)
     print("=> Mean Error: {}. AUC@0.07: {}".format(mean_error, auc))

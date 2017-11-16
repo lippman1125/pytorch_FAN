@@ -11,6 +11,7 @@ from models.layers import SElayer, attentionCRF
 
 __all__ = ['HourglassNet', 'fan']
 
+
 class SEBottleneck(nn.Module):
     expansion = 2
 
@@ -50,6 +51,7 @@ class SEBottleneck(nn.Module):
         out += residual
 
         return out
+
 
 class Bottleneck(nn.Module):
     expansion = 2
@@ -137,11 +139,17 @@ class Hourglass(nn.Module):
 class HourglassNet(nn.Module):
     '''Hourglass model from Newell et al ECCV 2016'''
 
-    def __init__(self, block, num_stacks=2, num_blocks=4, use_attention=False, num_classes=16):
+    def __init__(self,
+                 block,
+                 num_stacks=2,
+                 num_blocks=4,
+                 num_feats=256,
+                 use_attention=False,
+                 num_classes=16):
         super(HourglassNet, self).__init__()
 
         self.inplanes = 64
-        self.num_feats = 128
+        self.num_feats = num_feats
         self.num_stacks = num_stacks
         self.conv1 = nn.Conv2d(3, self.inplanes, kernel_size=7, stride=2, padding=3, bias=True)
         self.bn1 = nn.BatchNorm2d(self.inplanes)
@@ -153,7 +161,6 @@ class HourglassNet(nn.Module):
         if use_attention:
             self.attg = attentionCRF(self.num_feats * block.expansion, 3, 3, False)
             self.attp = attentionCRF(self.num_feats * block.expansion, 3, 3, True)
-
 
         # build hourglass modules
         ch = self.num_feats * block.expansion
@@ -247,6 +254,7 @@ def fan(**kwargs):
         block,
         num_stacks=kwargs['num_stacks'],
         num_blocks=kwargs['num_blocks'],
+        num_feats=kwargs['num_feats'],
         use_attention=kwargs['use_attention'],
         num_classes=kwargs['num_classes'])
     return model
