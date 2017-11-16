@@ -28,6 +28,7 @@ model_names = sorted(
 best_acc = 0.
 idx = range(1, 69, 1)
 
+
 def get_loader(data):
     return {
         '300W_LP': W300LP,
@@ -48,7 +49,11 @@ def main(args):
     print("=> Models will be saved at: {}".format(args.checkpoint))
 
     model = models.__dict__[args.netType](
-        num_stacks=args.nStacks, num_blocks=args.nModules, use_se=args.use_se, use_attention=args.use_attention, num_classes=68)
+        num_stacks=args.nStacks,
+        num_blocks=args.nModules,
+        use_se=args.use_se,
+        use_attention=args.use_attention,
+        num_classes=68)
 
     model = torch.nn.DataParallel(model).cuda()
 
@@ -91,7 +96,8 @@ def main(args):
         print('=> Evaluation only')
         loss, acc, predictions = validate(val_loader, model, criterion, args.netType, args.debug,
                                           args.flip)
-        save_pred(predictions, checkpoint=args.checkpoint)
+        D = args.data.split('/')[-1]
+        save_pred(predictions, checkpoint=os.path.join(args.checkpoint, D))
         logger.plot(['Train Acc', 'Val Acc'])
         savefig(os.path.join(args.checkpoint, 'log.eps'))
         return
@@ -218,7 +224,7 @@ def validate(loader, model, criterion, netType, debug, flip):
 
     model.eval()
     gt_win, pred_win = None, None
-    bar = Bar('Processing', max=len(loader))
+    # bar = Bar('Processing', max=len(loader))
     all_dists = torch.zeros((68, loader.dataset.__len__()))
     for i, (inputs, target, meta) in enumerate(loader):
         data_time.update(time.time() - end)
@@ -267,18 +273,18 @@ def validate(loader, model, criterion, netType, debug, flip):
         batch_time.update(time.time() - end)
         end = time.time()
 
-        bar.suffix = '({batch}/{size}) Data: {data:.6f}s | Batch: {bt:.3f}s | Total: {total:} | ETA: {eta:} | Loss: {loss:.4f} | Acc: {acc: .4f}'.format(
-            batch=i + 1,
-            size=len(loader),
-            data=data_time.val,
-            bt=batch_time.val,
-            total=bar.elapsed_td,
-            eta=bar.eta_td,
-            loss=losses.avg,
-            acc=acces.avg)
-        bar.next()
+    #     bar.suffix = '({batch}/{size}) Data: {data:.6f}s | Batch: {bt:.3f}s | Total: {total:} | ETA: {eta:} | Loss: {loss:.4f} | Acc: {acc: .4f}'.format(
+    #         batch=i + 1,
+    #         size=len(loader),
+    #         data=data_time.val,
+    #         bt=batch_time.val,
+    #         total=bar.elapsed_td,
+    #         eta=bar.eta_td,
+    #         loss=losses.avg,
+    #         acc=acces.avg)
+    #     bar.next()
 
-    bar.finish()
+    # bar.finish()
     mean_error = torch.mean(all_dists)
     auc = calc_metrics(all_dists, show_curve=False)
     print("=> Mean Error: {}. AUC@0.07: {}".format(mean_error, auc))

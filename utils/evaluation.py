@@ -10,6 +10,7 @@ from .transforms import transform, transform_preds
 
 __all__ = ['accuracy', 'AverageMeter']
 
+
 def get_preds(scores):
     ''' get predictions from score maps in torch Tensor
         return type: torch.LongTensor
@@ -23,12 +24,13 @@ def get_preds(scores):
     preds = idx.repeat(1, 1, 2).float()
 
     # batchsize * numPoints * 2
-    preds[:,:,0] = (preds[:,:,0] - 1) % scores.size(3) + 1
-    preds[:,:,1] = torch.floor((preds[:,:,1] - 1) / scores.size(2)) + 1
+    preds[:, :, 0] = (preds[:, :, 0] - 1) % scores.size(3) + 1
+    preds[:, :, 1] = torch.floor((preds[:, :, 1] - 1) / scores.size(2)) + 1
 
     pred_mask = maxval.gt(0).repeat(1, 1, 2).float()
     preds *= pred_mask
     return preds
+
 
 def calc_dists(preds, target, normalize):
     preds = preds.float()
@@ -36,25 +38,27 @@ def calc_dists(preds, target, normalize):
     dists = torch.zeros(preds.size(1), preds.size(0))
     for n in range(preds.size(0)):
         for c in range(preds.size(1)):
-            if target[n,c,0] > 1 and target[n, c, 1] > 1:
-                dists[c, n] = torch.dist(preds[n,c,:], target[n,c,:])/normalize[n]
+            if target[n, c, 0] > 1 and target[n, c, 1] > 1:
+                dists[c, n] = torch.dist(preds[n, c, :], target[n, c, :]) / normalize[n]
             else:
                 dists[c, n] = -1
     return dists
 
+
 def dist_acc(dists, thr=0.5):
     ''' Return percentage below threshold while ignoring values with a -1 '''
     if dists.ne(-1).sum() > 0:
-        return dists.le(thr).eq(dists.ne(-1)).sum()*1.0 / dists.ne(-1).sum()
+        return dists.le(thr).eq(dists.ne(-1)).sum() * 1.0 / dists.ne(-1).sum()
     else:
         return -1
 
+
 def calc_metrics(dists, show_curve=False, path=None):
     errors = torch.mean(dists, 0).view(dists.size(1))
-    axes1 = np.linspace(0,1,1000)
+    axes1 = np.linspace(0, 1, 1000)
     axes2 = np.zeros(1000)
     for i in range(1000):
-        axes2[i] = (errors < axes1[i]).sum()/float(errors.shape[0])
+        axes2[i] = (errors < axes1[i]).sum() / float(errors.shape[0])
 
     auc = round(np.sum(axes2[:70]) / .7, 2)
 
@@ -68,43 +72,46 @@ def calc_metrics(dists, show_curve=False, path=None):
         plt.title('NME (%)', fontsize=20)
         plt.xlabel('NME (%)', fontsize=16)
         plt.ylabel('Test images (%)', fontsize=16)
-        plt.plot(axes1 * 100, axes2 * 100, 'b-', label='FAN ('+str(auc) + ')', lw=3)
+        plt.plot(axes1 * 100, axes2 * 100, 'b-', label='FAN (' + str(auc) + ')', lw=3)
         plt.legend(loc=4, fontsize=16)
 
         plt.savefig(os.path.join(path + '/CED.eps'))
     return auc
 
+
 def _get_bboxsize(iterable):
     mins = torch.min(iterable, 0)[0].view(2)
     maxs = torch.max(iterable, 0)[0].view(2)
 
-    center = torch.FloatTensor((maxs[0]-(maxs[0]-mins[0])/2, maxs[1] - (maxs[1]-mins[1])/2))
+    center = torch.FloatTensor((maxs[0] - (maxs[0] - mins[0]) / 2,
+                                maxs[1] - (maxs[1] - mins[1]) / 2))
     center[1] = center[1] - ((maxs[1] - mins[1]) * 0.12)
 
     return np.sqrt((maxs[0] - mins[0]) * (maxs[1] - mins[1]))
+
 
 def accuracy(output, target, idxs, thr=0.08):
     ''' Calculate accuracy according to NME, but uses ground truth heatmap rather than x,y locations
     First value to be returned is accuracy calculated based on overall 'idxs'
     followed by individual accuracies
     '''
-    preds   = get_preds(output)
-    gts     = get_preds(target)
+    preds = get_preds(output)
+    gts = get_preds(target)
     # B * 2
-    norm    = torch.ones(preds.size(0))
+    norm = torch.ones(preds.size(0))
     for i, gt in enumerate(gts):
         norm[i] = _get_bboxsize(gt)
 
-    dists   = calc_dists(preds, gts, norm)
+    dists = calc_dists(preds, gts, norm)
 
     # auc = calc_metrics(dists)
 
-    acc = torch.zeros(len(idxs)+1)
+    acc = torch.zeros(len(idxs) + 1)
     avg_acc = 0
     cnt = 0
 
     mean_dists = torch.mean(dists, 0)
-    acc[0] = mean_dists.le(thr).sum()*1.0 / preds.size(0)
+    acc[0] = mean_dists.le(thr).sum() * 1.0 / preds.size(0)
     # for i in range(len(idxs)):
     #     acc[i+1] = dist_acc(dists[idxs[i]-1], thr=thr)
     #     if acc[i+1] >= 0:
@@ -115,12 +122,13 @@ def accuracy(output, target, idxs, thr=0.08):
     #     acc[0] = avg_acc / cnt
     return acc, dists
 
+
 def final_preds(output, center, scale, res):
     assert output.size(1) == 136 or output.size(1) == 68
     if output.size(1) == 136:
         coords = output.view((output.szie(0), 68, 2))
     else:
-        coords = get_preds(output) # float type
+        coords = get_preds(output)  # float type
 
     # pose-processing
     for n in range(coords.size(0)):
@@ -129,7 +137,8 @@ def final_preds(output, center, scale, res):
             px = int(math.floor(coords[n][p][0]))
             py = int(math.floor(coords[n][p][1]))
             if px > 1 and px < res[0] and py > 1 and py < res[1]:
-                diff = torch.Tensor([hm[py - 1][px] - hm[py - 1][px - 2], hm[py][px - 1]-hm[py - 2][px - 1]])
+                diff = torch.Tensor(
+                    [hm[py - 1][px] - hm[py - 1][px - 2], hm[py][px - 1] - hm[py - 2][px - 1]])
                 coords[n][p] += diff.sign() * .25
     coords += 0.5
     preds = coords.clone()
@@ -142,8 +151,10 @@ def final_preds(output, center, scale, res):
         preds = preds.view(1, preds.size())
     return preds
 
+
 class AverageMeter(object):
     """Computes and stores the average and current value"""
+
     def __init__(self):
         self.reset()
 

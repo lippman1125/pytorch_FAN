@@ -30,7 +30,7 @@ class AFLW2000(W300LP):
         for f in files:
             lines.append(os.path.join(base_dir, f))
         print('=> loaded AFLW2000 set, {} images were found'.format(len(lines)))
-        return lines
+        return sorted(lines)
 
     def generateSampleFace(self, idx):
         sf = self.scale_factor
