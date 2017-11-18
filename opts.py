@@ -15,11 +15,7 @@ def argparser():
     P.add_argument('--train-batch', type=int, default=24, help='minibatch size')
     P.add_argument('--val-batch', type=int, default=10, help='minibatch size')
     P.add_argument('-c', '--checkpoint', type=str, default='checkpoint', help='model save path')
-    P.add_argument(
-        '--resume',
-        type=str,
-        default='',
-        help='resume from lasteset saved checkpoints in this directory')
+    P.add_argument('--resume', type=str, default='', help='resume from lasteset saved checkpoints')
     P.add_argument('--lr', type=float, default=1e-4, help='initial learning rate')
     P.add_argument('--momentum', type=float, default=0.0, help='momentum')
     P.add_argument('--weight-decay', type=float, default=0.0, help='weight decay')

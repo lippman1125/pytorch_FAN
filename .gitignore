@@ -2,6 +2,8 @@
 luac.out
 *.lua
 *.pyc
+*.sh
+*.pbs
 .ignore
 tags
 

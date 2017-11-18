@@ -175,12 +175,12 @@ class HourglassNet(nn.Module):
             # attention part
             if not use_attention:
                 score.append(nn.Conv2d(ch, num_classes, kernel_size=1, bias=True))
-            elif i <= 3:
-                score.append(attentionCRF(ch, 3, 3, False))
-                score.append(nn.Conv2d(ch, num_classes, 1, bias=True))
-            elif i > 3:
-                score.append(attentionCRF(ch, 3, 3, False))
-                score.append(attentionCRF(ch, 3, 3, True))
+            elif i <= num_stacks // 2 -1:
+                score.append(nn.Sequential(attentionCRF(ch, 3, 3, False),
+                                            nn.Conv2d(ch, num_classes, 1, bias=True)))
+            else:
+                score.append(nn.Sequential(attentionCRF(ch, 3, 3, False),
+                                            attentionCRF(ch, 3, 3, True)))
 
             if i < num_stacks - 1:
                 fc_.append(nn.Conv2d(ch, ch, kernel_size=1, bias=True))

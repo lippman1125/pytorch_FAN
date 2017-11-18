@@ -15,7 +15,7 @@ import models
 from datasets import W300LP, VW300, AFLW2000
 from utils.logger import Logger, savefig
 from utils.imutils import batch_with_heatmap
-from utils.evaluation import accuracy, AverageMeter, final_preds, calc_metrics
+from utils.evaluation import accuracy, AverageMeter, final_preds, calc_metrics, calc_dists
 from utils.misc import adjust_learning_rate, save_checkpoint, save_pred
 import opts
 
@@ -63,7 +63,7 @@ def main(args):
     optimizer = torch.optim.RMSprop(
         model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
 
-    title = args.data + args.netType
+    title = args.checkpoint.split('/')[-1] + 'on' + args.data.split('/')[-1]
 
     Loader = get_loader(args.data)
 
@@ -95,8 +95,8 @@ def main(args):
 
     if args.evaluation:
         print('=> Evaluation only')
-        loss, acc, predictions = validate(val_loader, model, criterion, args.netType, args.debug,
-                                          args.flip)
+        loss, acc, predictions = validate(val_loader, model, criterion, args.netType,
+                                                        args.debug, args.flip)
         D = args.data.split('/')[-1]
         save_pred(predictions, checkpoint=os.path.join(args.checkpoint, D))
         logger.plot(['Train Acc', 'Val Acc'])
@@ -287,7 +287,7 @@ def validate(loader, model, criterion, netType, debug, flip):
 
     bar.finish()
     mean_error = torch.mean(all_dists)
-    auc = calc_metrics(all_dists, show_curve=False)
+    auc = calc_metrics(all_dists) # this is auc of predicted maps and target.
     print("=> Mean Error: {}. AUC@0.07: {}".format(mean_error, auc))
     return losses.avg, acces.avg, predictions
 

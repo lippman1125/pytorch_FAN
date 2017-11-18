@@ -53,16 +53,16 @@ def dist_acc(dists, thr=0.5):
         return -1
 
 
-def calc_metrics(dists, show_curve=False, path=None):
+def calc_metrics(dists, path=''):
     errors = torch.mean(dists, 0).view(dists.size(1))
     axes1 = np.linspace(0, 1, 1000)
     axes2 = np.zeros(1000)
     for i in range(1000):
-        axes2[i] = (errors < axes1[i]).sum() / float(errors.shape[0])
+        axes2[i] = (errors < axes1[i]).sum() / float(errors.size(0))
 
     auc = round(np.sum(axes2[:70]) / .7, 2)
 
-    if show_curve:
+    if path:
         plt.xlim(0, 7)
         plt.ylim(0, 100)
         plt.yticks(np.arange(0, 110, 10))
@@ -103,8 +103,6 @@ def accuracy(output, target, idxs, thr=0.08):
         norm[i] = _get_bboxsize(gt)
 
     dists = calc_dists(preds, gts, norm)
-
-    # auc = calc_metrics(dists)
 
     acc = torch.zeros(len(idxs) + 1)
     avg_acc = 0

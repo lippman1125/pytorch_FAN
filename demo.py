@@ -84,5 +84,5 @@ if __name__ == "__main__":
         norm[i] = _get_bboxsize(gt)
 
     dists = calc_dists(preds, gts, norm)
-    auc = calc_metrics(dists, True, args.checkpoint)
+    auc = calc_metrics(dists, args.checkpoint + dataset)
     print("Mean Error: {}. AUC: {}".format(round(torch.mean(dists) * 100., 2), auc))
