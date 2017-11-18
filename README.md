@@ -48,6 +48,7 @@ python main.py --help
 
 ## What's different?
 
+- Pythoner friendly and there is no need for `.t7` format annotations
 - Add 300-W-LP test set for validation.
 - Followed the excatly same training procedure described in the paper (except binary network part).
 - Add model evaluation in terms of **Mean error**, **AUC@0.07**
