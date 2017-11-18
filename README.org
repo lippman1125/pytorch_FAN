@@ -1,4 +1,4 @@
-# Pytorch version of 'How far are we from solving the 2D \& 3D Face Alignment problem? (and a dataset of 230,000 3D facial landmarks)'
+* Pytorch version of 'How far are we from solving the 2D \& 3D Face Alignment problem? (and a dataset of 230,000 3D facial landmarks)'
 
 For official torch7 version please refer to [face-alignment-training](https://github.com/1adrianb/face-alignment-training)
 
@@ -8,17 +8,17 @@ Thanks for bearpaw's excellent work on human pose estimation [pytorch-pose](http
 
 Pretrained models are available soon.
 
-## Requirments
+** Requirments
 
 - Install the latest [PyTorch](http://pytorch.org), version 0.2.1 is fully supported and there is no further test on older version.
 
-### Packages
+*** Packages
 
 - [scipy](https://www.scipy.org/)
 - [torchvision](https://pytorch.org)
 - [progress](https://pypi.python.org/pypi/progress)(optional) for better visualization.
 
-## Setup
+** Setup
 
 1. Clone the github repository and install all the dependencies mentiones above.
 
@@ -32,7 +32,7 @@ cd pyhowfar
 
 3. Download the 300W-LP annotations converted to t7 format by paper author from [here](https://www.adrianbulat.com/downloads/FaceAlignment/landmarks.zip), extract it and move the ```landmarks``` folder to the root of the 300W-LP dataset.
 
-## Usage
+** Usage
 
 In order to run the demo please download the required models available bellow and the associated data.
 
@@ -46,7 +46,7 @@ In order to see all the available options please run:
 python main.py --help
 ```
 
-## What's different?
+** What's different?
 
 - Pythoner friendly and there is no need for `.t7` format annotations
 - Add 300-W-LP test set for validation.
@@ -54,7 +54,7 @@ python main.py --help
 - Add model evaluation in terms of **Mean error**, **AUC@0.07**
 - TODO: add evaluation on test sets (300W, 300VW, AFLW2000-3D etc.).
 
-## Citation
+** Citation
 
 ```
 @inproceedings{bulat2017far,
