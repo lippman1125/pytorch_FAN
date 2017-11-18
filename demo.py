@@ -57,7 +57,10 @@ def loadgts(datapath, pointType='2D'):
         dirs = os.listdir(base_dir)
         lines = []
         for d in dirs:
-            files = [osp.join(base_dir, d, f) for f in os.listdir(osp.join(base_dir, d)) if f.endswith('t7')]
+            files = [
+                osp.join(base_dir, d, f) for f in os.listdir(osp.join(base_dir, d))
+                if f.endswith('t7')
+            ]
             lines.extend(files)
         all_gts = torch.zeros((len(lines), 68, 2))
         for i, f in enumerate(lines):
@@ -76,13 +79,13 @@ if __name__ == "__main__":
     import opts
     args = opts.argparser()
     dataset = args.data.split('/')[-1]
-    preds = torch.from_numpy(
-        loadpreds_if_exists(osp.join(args.checkpoint, dataset, 'preds_valid.mat')))
+    save_dir = osp.join(args.checkpoint, dataset)
+    preds = torch.from_numpy(loadpreds_if_exists(osp.join(save_dir, 'preds_valid.mat')))
     gts = loadgts(args.data, args.pointType)
     norm = np.ones(preds.size(0))
     for i, gt in enumerate(gts):
         norm[i] = _get_bboxsize(gt)
 
     dists = calc_dists(preds, gts, norm)
-    auc = calc_metrics(dists, args.checkpoint + dataset)
+    auc = calc_metrics(dists, save_dir)
     print("Mean Error: {}. AUC: {}".format(round(torch.mean(dists) * 100., 2), auc))

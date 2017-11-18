@@ -95,12 +95,13 @@ def main(args):
 
     if args.evaluation:
         print('=> Evaluation only')
+        D = args.data.split('/')[-1]
+        save_dir = os.path.join(args.checkpoint, D)
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
         loss, acc, predictions = validate(val_loader, model, criterion, args.netType,
                                                         args.debug, args.flip)
-        D = args.data.split('/')[-1]
-        save_pred(predictions, checkpoint=os.path.join(args.checkpoint, D))
-        logger.plot(['Train Acc', 'Val Acc'])
-        savefig(os.path.join(args.checkpoint, 'log.eps'))
+        save_pred(predictions, checkpoint=save_dir)
         return
 
     train_loader = torch.utils.data.DataLoader(
@@ -151,7 +152,7 @@ def train(loader, model, criterion, optimizer, netType, debug=False, flip=False)
     end = time.time()
 
     gt_win, pred_win = None, None
-    bar = Bar('Processing', max=len(loader))
+    bar = Bar('Training', max=len(loader))
     for i, (inputs, target) in enumerate(loader):
         data_time.update(time.time() - end)
 
@@ -225,7 +226,7 @@ def validate(loader, model, criterion, netType, debug, flip):
 
     model.eval()
     gt_win, pred_win = None, None
-    bar = Bar('Processing', max=len(loader))
+    bar = Bar('Validating', max=len(loader))
     all_dists = torch.zeros((68, loader.dataset.__len__()))
     for i, (inputs, target, meta) in enumerate(loader):
         data_time.update(time.time() - end)
