@@ -12,7 +12,7 @@ import torch.optim
 import torchvision.datasets as datasets
 
 import models
-from datasets import W300LP, VW300, AFLW2000
+from datasets import W300LP, VW300, AFLW2000, LS3DW
 from utils.logger import Logger, savefig
 from utils.imutils import batch_with_heatmap
 from utils.evaluation import accuracy, AverageMeter, final_preds, calc_metrics, calc_dists
@@ -26,19 +26,22 @@ model_names = sorted(
 # torch.setdefaulttensortype('torch.FloatTensor')
 
 best_acc = 0.
+best_auc = 0.
 idx = range(1, 69, 1)
 
 
 def get_loader(data):
     return {
         '300W_LP': W300LP,
-        'LS3D_W/300VW-3D': VW300,
+        'LS3D-W/300VW-3D': VW300,
         'AFLW2000': AFLW2000,
+        'LS3D-W': LS3DW,
     }[data[5:]]
 
 
 def main(args):
     global best_acc
+    global best_auc
 
     if not os.path.exists(args.checkpoint):
         os.makedirs(args.checkpoint)
@@ -63,7 +66,7 @@ def main(args):
     optimizer = torch.optim.RMSprop(
         model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
 
-    title = args.checkpoint.split('/')[-1] + 'on' + args.data.split('/')[-1]
+    title = args.checkpoint.split('/')[-1] + ' on ' + args.data.split('/')[-1]
 
     Loader = get_loader(args.data)
 
@@ -88,7 +91,7 @@ def main(args):
             print("=> no checkpoint found at '{}'".format(args.resume))
     else:
         logger = Logger(os.path.join(args.checkpoint, 'log.txt'), title=title)
-        logger.set_names(['Epoch', 'LR', 'Train Loss', 'Valid Loss', 'Train Acc', 'Val Acc'])
+        logger.set_names(['Epoch', 'LR', 'Train Loss', 'Valid Loss', 'Train Acc', 'Val Acc', 'AUC'])
 
     cudnn.benchmark = True
     print('=> Total params: %.2fM' % (sum(p.numel() for p in model.parameters()) / (1024. * 1024)))
@@ -99,7 +102,7 @@ def main(args):
         save_dir = os.path.join(args.checkpoint, D)
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
-        loss, acc, predictions = validate(val_loader, model, criterion, args.netType,
+        loss, acc, predictions, auc = validate(val_loader, model, criterion, args.netType,
                                                         args.debug, args.flip)
         save_pred(predictions, checkpoint=save_dir)
         return
@@ -118,19 +121,19 @@ def main(args):
         train_loss, train_acc = train(train_loader, model, criterion, optimizer, args.netType,
                                       args.debug, args.flip)
         # do not save predictions in model file
-        valid_loss, valid_acc, predictions = validate(val_loader, model, criterion, args.netType,
+        valid_loss, valid_acc, predictions, valid_auc = validate(val_loader, model, criterion, args.netType,
                                                       args.debug, args.flip)
 
-        logger.append([int(epoch + 1), lr, train_loss, valid_loss, train_acc, valid_acc])
+        logger.append([int(epoch + 1), lr, train_loss, valid_loss, train_acc, valid_acc, valid_auc])
 
-        is_best = valid_acc >= best_acc
-        best_acc = max(valid_acc, best_acc)
+        is_best = valid_auc >= best_auc
+        best_auc = max(valid_auc, best_auc)
         save_checkpoint(
             {
                 'epoch': epoch + 1,
                 'netType': args.netType,
                 'state_dict': model.state_dict(),
-                'best_acc': best_acc,
+                'best_acc': best_auc,
                 'optimizer': optimizer.state_dict(),
             },
             is_best,
@@ -138,7 +141,7 @@ def main(args):
             checkpoint=args.checkpoint)
 
     logger.close()
-    logger.plot(['Train Acc', 'Val Acc'])
+    logger.plot(['AUC'])
     savefig(os.path.join(args.checkpoint, 'log.eps'))
 
 
@@ -289,8 +292,8 @@ def validate(loader, model, criterion, netType, debug, flip):
     bar.finish()
     mean_error = torch.mean(all_dists)
     auc = calc_metrics(all_dists) # this is auc of predicted maps and target.
-    print("=> Mean Error: {}. AUC@0.07: {}".format(mean_error, auc))
-    return losses.avg, acces.avg, predictions
+    print("=> Mean Error: {:.2f}, AUC@0.07: {} based on maps".format(mean_error*100., auc))
+    return losses.avg, acces.avg, predictions, auc
 
 
 if __name__ == '__main__':

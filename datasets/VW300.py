@@ -31,18 +31,22 @@ class VW300(W300LP):
         }[split]
 
     def _getDataFaces(self, is_train):
-        split = self._getCategory(self.split)
-        base_dir = os.path.join(self.img_folder, split)
-        dirs = os.listdir(base_dir)
+        # split = self._getCategory(self.split)
         lines = []
-        for d in dirs:
-            files = [f for f in os.listdir(os.path.join(base_dir, d)) if f.endswith('.t7')]
-            for f in files:
-                lines.append(os.path.join(base_dir, d, f))
+        if is_train:
+            pass
+        else:
+            for split in ['CatA', 'CatB', 'CatC']:
+                base_dir = os.path.join(self.img_folder, split)
+                dirs = os.listdir(base_dir)
+                for d in dirs:
+                    files = [f for f in os.listdir(os.path.join(base_dir, d)) if f.endswith('.t7')]
+                    for f in files:
+                        lines.append(os.path.join(base_dir, d, f))
         if is_train:
             print('=> loaded train set, {} images were found'.format(len(lines)))
         else:
-            print('=> loaded {} set, {} images were found'.format(split, len(lines)))
+            print('=> loaded 300VW-3D dataset, {} images were found'.format(len(lines)))
         return lines
 
     def generateSampleFace(self, idx):

@@ -7,41 +7,39 @@ import math
 from skimage import io
 
 import torch
-import torch.utils.data as data
+
 from torch.utils.serialization import load_lua
 
 # from utils.utils import *
 from utils.imutils import *
 from utils.transforms import *
 
+from datasets.W300LP import W300LP
 
-class W300LP(data.Dataset):
+
+class LS3DW(W300LP):
 
     def __init__(self, args, split):
-        self.nParts = 68
-        self.pointType = args.pointType
-        # self.anno = anno
-        self.img_folder = args.data
-        self.split = split
-        self.is_train = True if self.split == 'train' else False
-        self.anno = self._getDataFaces(self.is_train)
-        self.total = len(self.anno)
-        self.scale_factor = args.scale_factor
-        self.rot_factor = args.rot_factor
-        self.mean, self.std = self._comput_mean()
+        super(LS3DW, self).__init__(args, split)
+        assert self.pointType == '3D'
 
     def _getDataFaces(self, is_train):
-        base_dir = os.path.join(self.img_folder, 'landmarks')
-        dirs = os.listdir(base_dir)
-        lines = []
+        base_dir = os.path.join(self.img_folder, 'new_dataset')
+        E, M, H = [], [], []
         vallines = []
-        for d in dirs:
-            files = [f for f in os.listdir(os.path.join(base_dir, d)) if f.endswith('.mat')]
-            for f in files:
-                if f.find('test') == -1:
-                    lines.append(f)
-                else:
-                    vallines.append(f)
+        lines = []
+        files = [f for f in os.listdir(base_dir) if f.endswith('.t7')]
+        for f in files:
+            num_of_file = int(f.split('.')[0])
+            if num_of_file % 3 == 1:  # 0-30
+                E.append(os.path.join(base_dir, f))
+            elif num_of_file % 3 == 2:  # 30-60
+                M.append(os.path.join(base_dir, f))
+            else:  # 60-90
+                H.append(os.path.join(base_dir, f))
+        vallines.extend(E)
+        vallines.extend(M)
+        vallines.extend(H)
         if is_train:
             print('=> loaded train set, {} images were found'.format(len(lines)))
             return lines
@@ -49,32 +47,21 @@ class W300LP(data.Dataset):
             print('=> loaded validation set, {} images were found'.format(len(vallines)))
             return vallines
 
-    def __len__(self):
-        return self.total
-
-    def __getitem__(self, index):
-        inp, out, pts, c, s = self.generateSampleFace(index)
-        self.pts, self.c, self.s = pts, c, s
-        if self.is_train:
-            return inp, out
-        else:
-            meta = {'index': index, 'center': c, 'scale': s, 'pts': pts,}
-            return inp, out, meta
-
     def generateSampleFace(self, idx):
         sf = self.scale_factor
         rf = self.rot_factor
 
-        main_pts = load_lua(
-            os.path.join(self.img_folder, 'landmarks', self.anno[idx].split('_')[0],
-                         self.anno[idx][:-4] + '.t7'))
-        pts = main_pts[0] if self.pointType == '2D' else main_pts[1]
-        c = torch.Tensor((450 / 2, 450 / 2 + 50))
-        s = 1.8
+        main_pts = load_lua(self.anno[idx])
+        pts = main_pts
+        mins_ = torch.min(pts, 0)[0].view(2)  # min vals
+        maxs_ = torch.max(pts, 0)[0].view(2)  # max vals
+        c = torch.FloatTensor((maxs_[0] - (maxs_[0] - mins_[0]) / 2,
+                               maxs_[1] - (maxs_[1] - mins_[1]) / 2))
+        # c[0] -= ((maxs_[0] - mins_[0]) * 0.12)
+        c[1] -= ((maxs_[1] - mins_[1]) * 0.12)
+        s = (maxs_[0] - mins_[0] + maxs_[1] - mins_[1]) / 195
 
-        img = load_image(
-            os.path.join(self.img_folder, self.anno[idx].split('_')[0], self.anno[idx][:-8] +
-                         '.jpg'))
+        img = load_image(self.anno[idx][:-3] + '.jpg')
 
         r = 0
         if self.is_train:
@@ -107,7 +94,9 @@ class W300LP(data.Dataset):
         if os.path.isfile(meanstd_file):
             ms = torch.load(meanstd_file)
         else:
-            print("\tcomputing mean and std for the first time, it may takes a while, drink a cup of coffe...")
+            print(
+                "\tcomputing mean and std for the first time, it may takes a while, drink a cup of coffe..."
+            )
             mean = torch.zeros(3)
             std = torch.zeros(3)
             if self.is_train:
@@ -132,6 +121,12 @@ class W300LP(data.Dataset):
         return ms['mean'], ms['std']
 
 if __name__=="__main__":
-    import opts
+    import opts, demo
     args = opts.argparser()
-    dataset = W300LP(args, 'test')
+    dataset = LS3DW(args, 'test')
+    gts, gtfiles = demo.loadgts(args.data, args.pointType)
+    for i in range(len(gtfiles)):
+        if not gtfiles[i] == dataset.anno[i]:
+            print(gtfiles[i], dataset.anno[i])
+            exit()
+    print("All file are same")

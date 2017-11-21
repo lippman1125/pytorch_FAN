@@ -3,33 +3,41 @@
 from __future__ import absolute_import
 
 import os
+import time
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
 
 __all__ = ['Logger', 'LoggerMonitor', 'savefig']
 
+
 def savefig(fname, dpi=None):
     dpi = 150 if dpi == None else dpi
     plt.savefig(fname, dpi=dpi)
-    
+
+
 def plot_overlap(logger, names=None):
     names = logger.names if names == None else names
     numbers = logger.numbers
     for _, name in enumerate(names):
+        if name not in numbers.keys():
+            print("ignoring " + name)
+            continue
         x = np.arange(len(numbers[name]))
         plt.plot(x, np.asarray(numbers[name]))
     return [logger.title + '(' + name + ')' for name in names]
 
+
 class Logger(object):
     '''Save training process to log file with simple plot function.'''
-    def __init__(self, fpath, title=None, resume=False): 
+
+    def __init__(self, fpath, title=None, resume=False):
         self.file = None
         self.resume = resume
         self.title = '' if title == None else title
         if fpath is not None:
-            if resume: 
-                self.file = open(fpath, 'r') 
+            if resume:
+                self.file = open(fpath, 'r')
                 name = self.file.readline()
                 self.names = name.rstrip().split('\t')
                 self.numbers = {}
@@ -41,12 +49,12 @@ class Logger(object):
                     for i in range(0, len(numbers)):
                         self.numbers[self.names[i]].append(numbers[i])
                 self.file.close()
-                self.file = open(fpath, 'a')  
+                self.file = open(fpath, 'a')
             else:
                 self.file = open(fpath, 'w')
 
     def set_names(self, names):
-        if self.resume: 
+        if self.resume:
             pass
         # initialize numbers as empty list
         self.numbers = {}
@@ -58,7 +66,6 @@ class Logger(object):
         self.file.write('\n')
         self.file.flush()
 
-
     def append(self, numbers):
         assert len(self.names) == len(numbers), 'Numbers do not match names'
         for index, num in enumerate(numbers):
@@ -68,10 +75,13 @@ class Logger(object):
         self.file.write('\n')
         self.file.flush()
 
-    def plot(self, names=None):   
+    def plot(self, names=None):
         names = self.names if names == None else names
         numbers = self.numbers
         for _, name in enumerate(names):
+            if name not in numbers.keys():
+                print("ignoring " + name)
+                continue
             x = np.arange(len(numbers[name]))
             plt.plot(x, np.asarray(numbers[name]))
         plt.legend([self.title + '(' + name + ')' for name in names])
@@ -81,12 +91,16 @@ class Logger(object):
         if self.file is not None:
             self.file.close()
 
+
 class LoggerMonitor(object):
     '''Load and visualize multiple logs.'''
-    def __init__ (self, paths):
+
+    def __init__(self, paths):
         '''paths is a distionary with {name:filepath} pair'''
         self.loggers = []
         for title, path in paths.items():
+            if not os.path.isfile(path):
+                continue
             logger = Logger(path, title=title, resume=True)
             self.loggers.append(logger)
 
@@ -98,7 +112,8 @@ class LoggerMonitor(object):
             legend_text += plot_overlap(logger, names)
         plt.legend(legend_text, bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
         plt.grid(True)
-                    
+
+
 if __name__ == '__main__':
     # # Example
     # logger = Logger('test.txt')
@@ -116,13 +131,17 @@ if __name__ == '__main__':
 
     # Example: logger monitor
     paths = {
-    'resadvnet20':'/home/wyang/code/pytorch-classification/checkpoint/cifar10/resadvnet20/log.txt', 
-    'resadvnet32':'/home/wyang/code/pytorch-classification/checkpoint/cifar10/resadvnet32/log.txt',
-    'resadvnet44':'/home/wyang/code/pytorch-classification/checkpoint/cifar10/resadvnet44/log.txt',
+        'fan2d': '/data2/huangzh/pyhowfar/checkpoint/fan//log.txt',
+        'fan3d-128': '/data2/huangzh/pyhowfar/checkpoint/fan3d/4x1x128/log.txt',
+        'fan3d-256': '/data2/huangzh/pyhowfar/checkpoint/fan3d/log.txt',
+        'fan-se': '/data2/huangzh/pyhowfar/checkpoint/fan-se/log.txt',
+        'fan-sea': '/data2/huangzh/pyhowfar/checkpoint/fan-sea/log.txt',
     }
 
-    field = ['Valid Acc.']
+    field = ['Val Acc']
 
-    monitor = LoggerMonitor(paths)
-    monitor.plot(names=field)
-    savefig('test.eps')
+    while True:
+        monitor = LoggerMonitor(paths)
+        monitor.plot(names=field)
+        savefig('test.eps')
+        time.sleep(30*60)

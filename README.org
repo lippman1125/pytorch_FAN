@@ -41,8 +41,8 @@
 
    In order to see all the available options please run:
 
-   #+BEGIN_SRC 
-python main.py --help
+   #+BEGIN_SRC bash 
+     python main.py --help
    #+END_SRC
 
 ** What's different?

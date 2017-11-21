@@ -86,9 +86,9 @@ def _get_bboxsize(iterable):
 
     center = torch.FloatTensor((maxs[0] - (maxs[0] - mins[0]) / 2,
                                 maxs[1] - (maxs[1] - mins[1]) / 2))
-    center[1] = center[1] - ((maxs[1] - mins[1]) * 0.12)
+    # center[1] = center[1] - ((maxs[1] - mins[1]) * 0.12)
 
-    return np.sqrt((maxs[0] - mins[0]) * (maxs[1] - mins[1]))
+    return np.sqrt(abs(maxs[0] - mins[0]) * abs(maxs[1] - mins[1]))
 
 
 def accuracy(output, target, idxs, thr=0.08):
@@ -123,7 +123,6 @@ def accuracy(output, target, idxs, thr=0.08):
 
 
 def final_preds(output, center, scale, res):
-    assert output.size(1) == 136 or output.size(1) == 68
     if output.size(1) == 136:
         coords = output.view((output.szie(0), 68, 2))
     else:

@@ -31,7 +31,7 @@ def save_checkpoint(state,
                     checkpoint='checkpoint',
                     filename='checkpoint.pth.tar',
                     snapshot=None):
-    # preds = to_numpy(preds)
+    preds = to_numpy(preds)
     filepath = os.path.join(checkpoint, filename)
     torch.save(state, filepath)
     scipy.io.savemat(os.path.join(checkpoint, 'preds.mat'), mdict={'preds' : preds})
