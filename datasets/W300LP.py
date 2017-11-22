@@ -132,6 +132,17 @@ class W300LP(data.Dataset):
         return ms['mean'], ms['std']
 
 if __name__=="__main__":
-    import opts
+    import opts, demo
     args = opts.argparser()
     dataset = W300LP(args, 'test')
+    crop_win = None
+    for i in range(dataset.__len__()):
+        input, target, meta = dataset.__getitem__(i)
+        input = input.numpy().transpose(1,2,0) * 255.
+        target = target.numpy()
+        if crop_win is None:
+            crop_win = plt.imshow(input)
+        else:
+            crop_win.set_data(input)
+        plt.pause(0.5)
+        plt.draw

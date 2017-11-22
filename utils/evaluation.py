@@ -53,7 +53,7 @@ def dist_acc(dists, thr=0.5):
         return -1
 
 
-def calc_metrics(dists, path=''):
+def calc_metrics(dists, path='', category=''):
     errors = torch.mean(dists, 0).view(dists.size(1))
     axes1 = np.linspace(0, 1, 1000)
     axes2 = np.zeros(1000)
@@ -63,7 +63,7 @@ def calc_metrics(dists, path=''):
     auc = round(np.sum(axes2[:70]) / .7, 2)
 
     if path:
-        label = '{} on {} : {}'.format(path.split('/')[1], path.split('/')[2], str(auc))
+        label = '{}({}) : {}'.format(path.split('/')[2], category, str(auc))
         plt.xlim(0, 7)
         plt.ylim(0, 100)
         plt.yticks(np.arange(0, 110, 10))
@@ -73,7 +73,15 @@ def calc_metrics(dists, path=''):
         plt.title('NME (%)', fontsize=20)
         plt.xlabel('NME (%)', fontsize=16)
         plt.ylabel('Test images (%)', fontsize=16)
-        plt.plot(axes1 * 100, axes2 * 100, 'b-', label=label, lw=3)
+        if category:
+            if category in ['Easy', 'Category A']:
+                plt.plot(axes1 * 100, axes2 * 100, 'b-', label=label, lw=3)
+            if category in ['Media', 'Category B']:
+                plt.plot(axes1 * 100, axes2 * 100, 'r-', label=label, lw=3)
+            if category in ['Hard', 'Category C']:
+                plt.plot(axes1 * 100, axes2 * 100, 'g-', label=label, lw=3)
+        else:
+            plt.plot(axes1 * 100, axes2 * 100, 'b-', label=label, lw=3)
         plt.legend(loc=4, fontsize=12)
 
         plt.savefig(os.path.join(path + '/CED.eps'))

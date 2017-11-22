@@ -131,14 +131,15 @@ if __name__ == '__main__':
 
     # Example: logger monitor
     paths = {
-        'fan2d': '/data2/huangzh/pyhowfar/checkpoint/fan//log.txt',
-        'fan3d-128': '/data2/huangzh/pyhowfar/checkpoint/fan3d/4x1x128/log.txt',
-        'fan3d-256': '/data2/huangzh/pyhowfar/checkpoint/fan3d/log.txt',
-        'fan-se': '/data2/huangzh/pyhowfar/checkpoint/fan-se/log.txt',
-        'fan-sea': '/data2/huangzh/pyhowfar/checkpoint/fan-sea/log.txt',
+        'fan-a': '/data2/huangzh/pyhowfar/checkpoint/fan-a/log.txt',
+        # 'fan2d': '/data2/huangzh/pyhowfar/checkpoint/fan//log.txt',
+        # 'fan3d-128': '/data2/huangzh/pyhowfar/checkpoint/fan3d/4x1x128/log.txt',
+        # 'fan3d-256': '/data2/huangzh/pyhowfar/checkpoint/fan3d/log.txt',
+        # 'fan-se': '/data2/huangzh/pyhowfar/checkpoint/fan-se/log.txt',
+        # 'fan-sea': '/data2/huangzh/pyhowfar/checkpoint/fan-sea/log.txt',
     }
 
-    field = ['Val Acc']
+    field = ['AUC']
 
     while True:
         monitor = LoggerMonitor(paths)

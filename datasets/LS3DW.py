@@ -1,5 +1,6 @@
 from __future__ import print_function
 
+import matplotlib
 import os
 import numpy as np
 import random
@@ -124,9 +125,20 @@ if __name__=="__main__":
     import opts, demo
     args = opts.argparser()
     dataset = LS3DW(args, 'test')
-    gts, gtfiles = demo.loadgts(args.data, args.pointType)
-    for i in range(len(gtfiles)):
-        if not gtfiles[i] == dataset.anno[i]:
-            print(gtfiles[i], dataset.anno[i])
-            exit()
-    print("All file are same")
+    crop_win = None
+    for i in range(dataset.__len__()):
+        input, target, meta = dataset.__getitem__(i)
+        input = input.numpy().transpose(1,2,0)
+        target = target.numpy()
+        if crop_win is None:
+            crop_win = plt.imshow(input)
+        else:
+            crop_win.set_data(input)
+        plt.pause(1)
+        plt.draw
+    # gts, gtfiles = demo.loadgts(args.data, args.pointType)
+    # for i in range(len(gtfiles)):
+    #     if not gtfiles[i] == dataset.anno[i]:
+    #         print(gtfiles[i], dataset.anno[i])
+    #         exit()
+    # print("All file are same")

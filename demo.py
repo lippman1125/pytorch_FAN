@@ -20,19 +20,6 @@ def loadpreds_if_exists(path):
         return sio.loadmat(path)['preds']
 
 
-def calc_dists(preds, target, normalize):
-    preds = preds.float()
-    target = target.float()
-    dists = torch.zeros(preds.size(1), preds.size(0))
-    for n in range(preds.size(0)):
-        for c in range(preds.size(1)):
-            if target[n, c, 0] > 1 and target[n, c, 1] > 1:
-                dists[c, n] = torch.dist(preds[n, c, :], target[n, c, :]) / normalize[n]
-            else:
-                dists[c, n] = -1
-    return dists
-
-
 def loadgts(datapath, pointType='2D'):
     if datapath.endswith('300W_LP'):
         base_dir = os.path.join(datapath, 'landmarks')
@@ -51,7 +38,7 @@ def loadgts(datapath, pointType='2D'):
             else:
                 pts = load_lua(osp.join(base_dir, f.split('_')[0], f[:-4] + '.t7'))[1]
             all_gts[i, :, :] = pts
-        return all_gts
+        return all_gts, lines
 
     elif datapath.find('300VW-3D') != -1:
         lines = []
@@ -110,14 +97,14 @@ if __name__ == "__main__":
 
     if dataset == 'LS3D-W' or dataset == '300VW-3D':
         for i in range(3):
-            if dataset = 'LS3D-W':
+            if dataset == 'LS3D-W':
                 category = {'0': 'Easy', '1': 'Media', '2': 'Hard'}[str(i)]
                 l, f = 2400*i, 2400*(i+1)
             else:
                 category = {'0': 'Category A', '1': 'Category B', '2': 'Category C'}[str(i)]
-                l, f = {0: [0, 62643], 1: [62643, 62642+32872], 2: [95515:-1]}[i]
+                l, f = {0: [0, 62643], 1: [62643, 62642+32872], 2: [95515,-1]}[i]
             dist = calc_dists(preds[l:f], gts[l:f], norm[l:f])
-            auc = calc_metrics(dist, save_dir)
+            auc = calc_metrics(dist, save_dir, category)
             print("FINAL: Mean Error: {}. AUC: {} of {} subset".format(round(torch.mean(dist) * 100., 2), auc, category))
     else:
         dists = calc_dists(preds, gts, norm)
