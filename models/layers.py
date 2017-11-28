@@ -74,7 +74,7 @@ class attentionCRF(nn.Module):
         return torch.cat(pre, 1)
 
 
-class RNN(nn.module):
+class RNN(nn.Module):
     def __init__(self, input_size, hidden_size, output_size):
         super(RNN, self).__init__()
 
