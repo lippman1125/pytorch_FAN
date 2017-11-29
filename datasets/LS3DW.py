@@ -61,19 +61,22 @@ class LS3DW(W300LP):
         # c[0] -= ((maxs_[0] - mins_[0]) * 0.12)
         c[1] -= ((maxs_[1] - mins_[1]) * 0.12)
         s = (maxs_[0] - mins_[0] + maxs_[1] - mins_[1]) / 195
+        print(s)
 
         img = load_image(self.anno[idx][:-3] + '.jpg')
 
         r = 0
         if self.is_train:
+            # scale
             s = s * torch.randn(1).mul_(sf).add_(1).clamp(1 - sf, 1 + sf)[0]
+            # rotatation
             r = torch.randn(1).mul_(rf).clamp(-2 * rf, 2 * rf)[0] if random.random() <= 0.6 else 0
-
+            # flip
             if random.random() <= 0.5:
                 img = torch.from_numpy(fliplr(img.numpy())).float()
                 pts = shufflelr(pts, width=img.size(2), dataset='w300lp')
                 c[0] = img.size(2) - c[0]
-
+            # RGB
             img[0, :, :].mul_(random.uniform(0.7, 1.3)).clamp_(0, 1)
             img[1, :, :].mul_(random.uniform(0.7, 1.3)).clamp_(0, 1)
             img[2, :, :].mul_(random.uniform(0.7, 1.3)).clamp_(0, 1)
@@ -124,18 +127,20 @@ class LS3DW(W300LP):
 if __name__=="__main__":
     import opts, demo
     args = opts.argparser()
+    args.data = "data/LS3D-W"
+    args.pointType = '3D'
     dataset = LS3DW(args, 'test')
     crop_win = None
     for i in range(dataset.__len__()):
         input, target, meta = dataset.__getitem__(i)
-        input = input.numpy().transpose(1,2,0)
-        target = target.numpy()
-        if crop_win is None:
-            crop_win = plt.imshow(input)
-        else:
-            crop_win.set_data(input)
-        plt.pause(1)
-        plt.draw
+        # input = input.numpy().transpose(1,2,0)
+        # target = target.numpy()
+        # if crop_win is None:
+        #     crop_win = plt.imshow(input)
+        # else:
+        #     crop_win.set_data(input)
+        # plt.pause(1)
+        # plt.draw
     # gts, gtfiles = demo.loadgts(args.data, args.pointType)
     # for i in range(len(gtfiles)):
     #     if not gtfiles[i] == dataset.anno[i]:

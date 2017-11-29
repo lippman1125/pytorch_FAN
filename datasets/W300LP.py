@@ -91,7 +91,7 @@ class W300LP(data.Dataset):
             img[2, :, :].mul_(random.uniform(0.7, 1.3)).clamp_(0, 1)
 
         inp = crop(img, c, s, [256, 256], rot=r)
-        inp = color_normalize(inp, self.mean, self.std)
+        # inp = color_normalize(inp, self.mean, self.std)
 
         tpts = pts.clone()
         out = torch.zeros(self.nParts, 64, 64)

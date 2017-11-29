@@ -154,6 +154,9 @@ def train(loader, model, criterion, optimizer, netType, debug=False, flip=False)
     model.train()
     end = time.time()
 
+    # rnn = torch.nn.LSTM(10, 20, 2)
+    # hidden = torch.autograd.Variable(torch.zeros((args.train_batch)))
+
     gt_win, pred_win = None, None
     bar = Bar('Training', max=len(loader))
     for i, (inputs, target) in enumerate(loader):

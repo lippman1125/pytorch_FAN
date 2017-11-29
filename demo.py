@@ -103,7 +103,8 @@ if __name__ == "__main__":
             else:
                 category = {'0': 'Category A', '1': 'Category B', '2': 'Category C'}[str(i)]
                 l, f = {0: [0, 62643], 1: [62643, 62642+32872], 2: [95515,-1]}[i]
-            dist = calc_dists(preds[l:f], gts[l:f], norm[l:f])
+            # For LS3D-W dataset which landmark indexed on `0`
+            dist = calc_dists(preds[l:f] - 1., gts[l:f], norm[l:f])
             auc = calc_metrics(dist, save_dir, category)
             print("FINAL: Mean Error: {}. AUC: {} of {} subset".format(round(torch.mean(dist) * 100., 2), auc, category))
     else:

@@ -6,6 +6,7 @@ luac.out
 *.pbs
 .ignore
 tags
+*.eps
 
 data/
 checkpoint
