@@ -2,15 +2,16 @@
 Recurrent Hourglass network inserted in
 the pre-activated Resnet
 Use lr=0.01 for current version
-(c) YANG, Wei
+(c) Zhihua Huang
 '''
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from models.layers import SElayer, attentionCRF
+from models.layers import SElayer, attentionCRF, ConvLSTM
 
 # from .preresnet import BasicBlock, Bottleneck
 
-__all__ = ['HourglassNet', 'fan']
+__all__ = ['HourglassNet', 'RNN', 'recurrent_fan']
 
 
 class SEBottleneck(nn.Module):
@@ -149,10 +150,11 @@ class HourglassNet(nn.Module):
                  num_classes=16):
         super(HourglassNet, self).__init__()
 
+        self.in_channels = 3 + num_classes
         self.inplanes = 64
         self.num_feats = num_feats
         self.num_stacks = num_stacks
-        self.conv1 = nn.Conv2d(3, self.inplanes, kernel_size=7, stride=2, padding=3, bias=True)
+        self.conv1 = nn.Conv2d(self.in_channels, self.inplanes, kernel_size=7, stride=2, padding=3, bias=True)
         self.bn1 = nn.BatchNorm2d(self.inplanes)
         self.relu = nn.ReLU(inplace=True)
         self.layer1 = self._make_residual(block, self.inplanes, 1)
@@ -246,17 +248,34 @@ class HourglassNet(nn.Module):
         return out
 
 
-def fan(**kwargs):
+class RNN(nn.Module):
+    def __init__(self, cnn, input_size, input_dim, hidden_dim, kernel_size=(3,3), num_layers=3):
+        super(RNN, self).__init__()
+        self.lstm = ConvLSTM(input_size, input_dim, hidden_dim, kernel_size, num_layers, batch_first=True)
+        self.spatial_rnn = nn.ConvTranspose2d(68, 68, 3, 4, 1, 3)
+        self.sigmoid = nn.Sigmoid()
+        self.cnn = cnn
+
+    def forward(self, x, hiddens):
+        combined = torch.cat((x, hiddens), 1)
+        outputs = self.cnn(combined)
+        hiddens = self.spatial_rnn(outputs[-1])
+        hiddens = self.sigmoid(hiddens)
+        return outputs, hiddens
+
+
+def recurrent_fan(**kwargs):
     if kwargs['use_se']:
         block = SEBottleneck
     else:
         block = Bottleneck
 
-    model = HourglassNet(
+    cnn = HourglassNet(
         block,
         num_stacks=kwargs['num_stacks'],
         num_blocks=kwargs['num_blocks'],
         num_feats=kwargs['num_feats'],
         use_attention=kwargs['use_attention'],
         num_classes=kwargs['num_classes'])
+    model = RNN(cnn, (64,64), 68, [128, 128, 68])
     return model
