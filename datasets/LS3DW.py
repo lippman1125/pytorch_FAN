@@ -61,7 +61,6 @@ class LS3DW(W300LP):
         # c[0] -= ((maxs_[0] - mins_[0]) * 0.12)
         c[1] -= ((maxs_[1] - mins_[1]) * 0.12)
         s = (maxs_[0] - mins_[0] + maxs_[1] - mins_[1]) / 195
-        print(s)
 
         img = load_image(self.anno[idx][:-3] + '.jpg')
 
@@ -82,7 +81,7 @@ class LS3DW(W300LP):
             img[2, :, :].mul_(random.uniform(0.7, 1.3)).clamp_(0, 1)
 
         inp = crop(img, c, s, [256, 256], rot=r)
-        inp = color_normalize(inp, self.mean, self.std)
+        # inp = color_normalize(inp, self.mean, self.std)
 
         tpts = pts.clone()
         out = torch.zeros(self.nParts, 64, 64)

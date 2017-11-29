@@ -162,8 +162,6 @@ def train(loader, model, criterion, optimizer, netType, debug=False, flip=False)
     for i, (inputs, target) in enumerate(loader):
         data_time.update(time.time() - end)
         batch_size = inputs.size(0)
-        if i == 0:
-            print("=> train batch: {}".format(batch_size))
 
         input_var = torch.autograd.Variable(inputs.cuda())
         target_var = torch.autograd.Variable(target.cuda(async=True))
@@ -240,11 +238,14 @@ def validate(loader, model, criterion, netType, debug, flip):
     all_dists = torch.zeros((68, loader.dataset.__len__()))
     for i, (inputs, target, meta) in enumerate(loader):
         data_time.update(time.time() - end)
+        batch_size = inputs.size(0)
 
         input_var = torch.autograd.Variable(inputs.cuda())
         target_var = torch.autograd.Variable(target.cuda(async=True))
+        hidden_var = torch.autograd.Variable(torch.zeros((batch_size, 68, 256, 256)).cuda())
 
-        output = model(input_var)
+        for r in range(3):
+            output, hidden_var = model(input_var, hidden_var)
         score_map = output[-1].data.cpu()
 
         if flip:
