@@ -36,7 +36,7 @@ def get_loader(data):
         'LS3D-W/300VW-3D': VW300,
         'AFLW2000': AFLW2000,
         'LS3D-W': LS3DW,
-    }[data[5:]]
+    }[os.path.basename(data)]
 
 
 def main(args):

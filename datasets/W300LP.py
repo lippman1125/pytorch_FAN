@@ -1,6 +1,7 @@
 from __future__ import print_function
 
 import os
+import sys
 import numpy as np
 import random
 import math
@@ -8,8 +9,12 @@ from skimage import io
 
 import torch
 import torch.utils.data as data
-from torch.utils.serialization import load_lua
+# from torch.utils.serialization import load_lua
+import torchfile
+import copy
+import cv2
 
+# sys.path.append("../")
 # from utils.utils import *
 from utils.imutils import *
 from utils.transforms import *
@@ -36,7 +41,7 @@ class W300LP(data.Dataset):
         lines = []
         vallines = []
         for d in dirs:
-            files = [f for f in os.listdir(os.path.join(base_dir, d)) if f.endswith('.mat')]
+            files = [f for f in os.listdir(os.path.join(base_dir, d)) if f.endswith('.t7')]
             for f in files:
                 if f.find('test') == -1:
                     lines.append(f)
@@ -65,15 +70,18 @@ class W300LP(data.Dataset):
         sf = self.scale_factor
         rf = self.rot_factor
 
-        main_pts = load_lua(
+        # main_pts = load_lua(
+        #     os.path.join(self.img_folder, 'landmarks', self.anno[idx].split('_')[0],
+        #                  self.anno[idx][:-4] + '.t7'))
+        main_pts = torchfile.load(
             os.path.join(self.img_folder, 'landmarks', self.anno[idx].split('_')[0],
-                         self.anno[idx][:-4] + '.t7'))
+                         self.anno[idx]))
         pts = main_pts[0] if self.pointType == '2D' else main_pts[1]
         c = torch.Tensor((450 / 2, 450 / 2 + 50))
         s = 1.8
 
         img = load_image(
-            os.path.join(self.img_folder, self.anno[idx].split('_')[0], self.anno[idx][:-8] +
+            os.path.join(self.img_folder, self.anno[idx].split('_')[0], self.anno[idx][:-7] +
                          '.jpg'))
 
         r = 0
@@ -93,18 +101,26 @@ class W300LP(data.Dataset):
         inp = crop(img, c, s, [256, 256], rot=r)
         # inp = color_normalize(inp, self.mean, self.std)
 
-        tpts = pts.clone()
-        out = torch.zeros(self.nParts, 64, 64)
-        for i in range(self.nParts):
-            if tpts[i, 0] > 0:
-                tpts[i, 0:2] = to_torch(transform(tpts[i, 0:2] + 1, c, s, [64, 64], rot=r))
-                out[i] = draw_labelmap(out[i], tpts[i] - 1, sigma=1)
+        if self.is_train:
+            tpts = copy.deepcopy(pts)
+            out = torch.zeros(self.nParts, 64, 64)
+            for i in range(self.nParts):
+                if tpts[i, 0] > 0:
+                    tpts[i, 0:2] = to_torch(transform(tpts[i, 0:2] + 1, c, s, [64, 64], rot=r))
+                    out[i] = draw_labelmap(out[i], tpts[i] - 1, sigma=1)
+        else:
+            tpts = copy.deepcopy(pts)
+            out = torch.zeros(self.nParts, 256, 256)
+            for i in range(self.nParts):
+                if tpts[i, 0] > 0:
+                    tpts[i, 0:2] = transform(tpts[i, 0:2] + 1, c, s, [256, 256], rot=r)
+                    out[i] = draw_labelmap(out[i], tpts[i] - 1, sigma=1)
 
-        return inp, out, pts, c, s
+        return inp, out, tpts, c, s
 
     def _comput_mean(self):
         meanstd_file = './data/300W_LP/mean.pth.tar'
-        if os.path.isfile(meanstd_file):
+        if os.path.exists(meanstd_file) and os.path.isfile(meanstd_file):
             ms = torch.load(meanstd_file)
         else:
             print("\tcomputing mean and std for the first time, it may takes a while, drink a cup of coffe...")
@@ -114,7 +130,7 @@ class W300LP(data.Dataset):
                 for i in range(self.total):
                     a = self.anno[i]
                     img_path = os.path.join(self.img_folder, self.anno[i].split('_')[0],
-                                            self.anno[i][:-8] + '.jpg')
+                                            self.anno[i][:-7] + '.jpg')
                     img = load_image(img_path)
                     mean += img.view(img.size(0), -1).mean(1)
                     std += img.view(img.size(0), -1).std(1)
@@ -132,17 +148,72 @@ class W300LP(data.Dataset):
         return ms['mean'], ms['std']
 
 if __name__=="__main__":
-    import opts, demo
+    import opts
     args = opts.argparser()
-    dataset = W300LP(args, 'test')
-    crop_win = None
-    for i in range(dataset.__len__()):
-        input, target, meta = dataset.__getitem__(i)
-        input = input.numpy().transpose(1,2,0) * 255.
-        target = target.numpy()
-        if crop_win is None:
-            crop_win = plt.imshow(input)
-        else:
-            crop_win.set_data(input)
-        plt.pause(0.5)
-        plt.draw
+
+    mode = "test"
+
+    if mode == "test":
+        dataset = W300LP(args, mode)
+        crop_win = None
+        for i in range(dataset.__len__()):
+            input, target, meta = dataset.__getitem__(i)
+            input = input.numpy().transpose(1,2,0) * 255.
+            target = target.numpy().transpose(1, 2, 0) * 255
+            input = np.ascontiguousarray(input, dtype=np.uint8)
+            target = np.ascontiguousarray(target, dtype=np.uint32)
+
+            print(np.shape(target))
+            pts = meta["pts"].astype(np.uint8)
+            # print(pts)
+
+            # print(np.shape(input))
+            print(input.dtype)
+            for i in range(68):
+                cv2.circle(input, (pts[i][0], pts[i][1]), 3, (0, 0, 255), 2)
+
+            cv2.imshow("face", input[:,:,::-1])
+            cv2.waitKey(0)
+            # for i in range(68):
+            #     cv2.imshow("heatmap", target[:,:,i])
+            #     cv2.waitKey(0)
+            target = np.sum(target, axis=2, keepdims=True)
+            cv2.imshow("heatmap", target.astype(np.uint8))
+            cv2.waitKey(0)
+
+    elif mode == "train":
+        dataset = W300LP(args, mode)
+        crop_win = None
+        for i in range(dataset.__len__()):
+            input, target = dataset.__getitem__(i)
+            input = input.numpy().transpose(1, 2, 0) * 255.0
+            target = target.numpy().transpose(1, 2, 0) * 255.0
+            input = np.ascontiguousarray(input, dtype=np.uint8)
+            target = np.ascontiguousarray(target, dtype=np.uint32)
+            # print(np.shape(input))
+            cv2.imshow("face", input[:, :, ::-1])
+            cv2.waitKey(0)
+            # for i in range(68):
+            #     cv2.imshow("heatmap", target[:, :, i])
+            #     cv2.waitKey(0)
+            # for k in range(68):
+            #     for m in range(64):
+            #         for n in range(64):
+            #             print(target[m,n,k], end=" ")
+            #         print("\n")
+            #     print("-------------------------------------")
+            target = np.sum(target, axis=2, keepdims=True)
+            # print(np.shape(target))
+            # for m in range(64):
+            #     for n in range(64):
+            #         print(target[m, n, 0], end=" ")
+            #     print("\n")
+            cv2.imshow("heatmap", target.astype(np.uint8))
+            cv2.waitKey(0)
+
+        # if crop_win is None:
+        #     crop_win = plt.imshow(input)
+        # else:
+        #     crop_win.set_data(input)
+        # plt.pause(0.5)
+        # plt.draw

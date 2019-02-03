@@ -6,10 +6,13 @@ import numpy as np
 import random
 import math
 from skimage import io
+import copy
+import cv2
 
 import torch
 
-from torch.utils.serialization import load_lua
+# from torch.utils.serialization import load_lua
+import torchfile
 
 # from utils.utils import *
 from utils.imutils import *
@@ -52,10 +55,12 @@ class LS3DW(W300LP):
         sf = self.scale_factor
         rf = self.rot_factor
 
-        main_pts = load_lua(self.anno[idx])
+        main_pts = torchfile.load(self.anno[idx])
         pts = main_pts
-        mins_ = torch.min(pts, 0)[0].view(2)  # min vals
-        maxs_ = torch.max(pts, 0)[0].view(2)  # max vals
+        mins_ = torch.min(torch.from_numpy(pts).float(), 0)[0].view(2)  # min vals
+        maxs_ = torch.max(torch.from_numpy(pts).float(), 0)[0].view(2)  # max vals
+        # print(mins_)
+        # print(maxs_)
         c = torch.FloatTensor((maxs_[0] - (maxs_[0] - mins_[0]) / 2,
                                maxs_[1] - (maxs_[1] - mins_[1]) / 2))
         # c[0] -= ((maxs_[0] - mins_[0]) * 0.12)
@@ -83,14 +88,22 @@ class LS3DW(W300LP):
         inp = crop(img, c, s, [256, 256], rot=r)
         # inp = color_normalize(inp, self.mean, self.std)
 
-        tpts = pts.clone()
-        out = torch.zeros(self.nParts, 64, 64)
-        for i in range(self.nParts):
-            if tpts[i, 0] > 0:
-                tpts[i, 0:2] = to_torch(transform(tpts[i, 0:2] + 1, c, s, [64, 64], rot=r))
-                out[i] = draw_labelmap(out[i], tpts[i] - 1, sigma=1)
+        if self.is_train:
+            tpts = copy.deepcopy(pts)
+            out = torch.zeros(self.nParts, 64, 64)
+            for i in range(self.nParts):
+                if tpts[i, 0] > 0:
+                    tpts[i, 0:2] = to_torch(transform(tpts[i, 0:2] + 1, c, s, [64, 64], rot=r))
+                    out[i] = draw_labelmap(out[i], tpts[i] - 1, sigma=1)
+        else:
+            tpts = copy.deepcopy(pts)
+            out = torch.zeros(self.nParts, 256, 256)
+            for i in range(self.nParts):
+                if tpts[i, 0] > 0:
+                    tpts[i, 0:2] = transform(tpts[i, 0:2] + 1, c, s, [256, 256], rot=r)
+                    out[i] = draw_labelmap(out[i], tpts[i] - 1, sigma=1)
 
-        return inp, out, pts, c, s
+        return inp, out, tpts, c, s
 
     def _comput_mean(self):
         meanstd_file = './data/300W_LP/mean.pth.tar'
@@ -124,7 +137,7 @@ class LS3DW(W300LP):
         return ms['mean'], ms['std']
 
 if __name__=="__main__":
-    import opts, demo
+    import opts
     args = opts.argparser()
     args.data = "data/LS3D-W"
     args.pointType = '3D'
@@ -146,3 +159,24 @@ if __name__=="__main__":
     #         print(gtfiles[i], dataset.anno[i])
     #         exit()
     # print("All file are same")
+        input = input.numpy().transpose(1, 2, 0) * 255.
+        target = target.numpy().transpose(1, 2, 0) * 255
+        input = np.ascontiguousarray(input, dtype=np.uint8)
+        target = np.ascontiguousarray(target, dtype=np.uint32)
+
+        # print(np.shape(target))
+        pts = meta["pts"].astype(np.uint8)
+        # print(pts)
+
+        # print(np.shape(input))
+        # print(input.dtype)
+        for i in range(68):
+            cv2.circle(input, (pts[i][0], pts[i][1]), 3, (0, 0, 255), 2)
+
+        cv2.imshow("face", input[:, :, ::-1])
+        # for i in range(68):
+        #     cv2.imshow("heatmap", target[:,:,i])
+        #     cv2.waitKey(0)
+        target = np.sum(target, axis=2, keepdims=True)
+        cv2.imshow("heatmap", target.astype(np.uint8))
+        cv2.waitKey(30)

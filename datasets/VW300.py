@@ -5,10 +5,12 @@ import numpy as np
 import random
 import math
 from skimage import io
+import copy
 
 import torch
 import torch.utils.data as data
-from torch.utils.serialization import load_lua
+# from torch.utils.serialization import load_lua
+import torchfile
 
 from utils.imutils import *
 from utils.transforms import *
@@ -53,7 +55,7 @@ class VW300(W300LP):
         sf = self.scale_factor
         rf = self.rot_factor
 
-        main_pts = load_lua(self.anno[idx])
+        main_pts = torchfile.load(self.anno[idx])
         pts = main_pts  # 3D landmarks only. # if self.pointType == '2D' else main_pts[1]
         mins_ = torch.min(pts, 0)[0].view(2)  # min vals
         maxs_ = torch.max(pts, 0)[0].view(2)  # max vals
@@ -81,7 +83,7 @@ class VW300(W300LP):
         inp = crop(img, c, s, [256, 256], rot=r)
         inp = color_normalize(inp, self.mean, self.std)
 
-        tpts = pts.clone()
+        tpts = cooy.deepcopy(pts)
         out = torch.zeros(self.nParts, 64, 64)
         for i in range(self.nParts):
             if tpts[i, 0] > 0:

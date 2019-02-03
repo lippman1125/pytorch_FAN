@@ -5,6 +5,7 @@ import numpy as np
 import scipy.misc
 import matplotlib.pyplot as plt
 import torch
+import copy
 
 from .misc import *
 from .imutils import *
@@ -59,7 +60,8 @@ def shufflelr(x, width, dataset='mpii'):
 
     # Change left-right parts
     for pair in matchedParts:
-        tmp = x[pair[0], :].clone()
+        # tmp = x[pair[0], :].clone()
+        tmp = copy.deepcopy(x[pair[0], :])
         x[pair[0], :] = x[pair[1], :]
         x[pair[1], :] = tmp
 

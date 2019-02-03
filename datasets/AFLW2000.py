@@ -9,7 +9,8 @@ from scipy import io as sio
 
 import torch
 import torch.utils.data as data
-from torch.utils.serialization import load_lua
+# from torch.utils.serialization import load_lua
+import torchfile
 
 from utils.imutils import *
 from utils.transforms import *
