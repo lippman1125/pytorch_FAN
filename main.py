@@ -12,6 +12,7 @@ import torch.optim
 import torchvision.datasets as datasets
 
 import models
+from models.fan_model import  FAN
 from datasets import W300LP, VW300, AFLW2000, LS3DW
 from utils.logger import Logger, savefig
 from utils.imutils import batch_with_heatmap
@@ -180,6 +181,7 @@ def train(loader, model, criterion, optimizer, netType, debug=False, flip=False)
             plt.draw()
 
         output = model(input_var)
+        # last one of output is score_map
         score_map = output[-1].data.cpu()
 
         if flip:
@@ -190,6 +192,7 @@ def train(loader, model, criterion, optimizer, netType, debug=False, flip=False)
             score_map += flip_output
 
         # intermediate supervision
+        # we have multi score-maps
         loss = 0
         for o in output:
             loss += criterion(o, target_var)
@@ -198,6 +201,7 @@ def train(loader, model, criterion, optimizer, netType, debug=False, flip=False)
         losses.update(loss.data[0], inputs.size(0))
         acces.update(acc[0], inputs.size(0))
 
+        # loss backforward
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
@@ -228,6 +232,7 @@ def validate(loader, model, criterion, netType, debug, flip):
     end = time.time()
 
     # predictions
+    # results of all test images
     predictions = torch.Tensor(loader.dataset.__len__(), 68, 2)
 
     model.eval()

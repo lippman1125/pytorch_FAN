@@ -179,4 +179,4 @@ if __name__=="__main__":
         #     cv2.waitKey(0)
         target = np.sum(target, axis=2, keepdims=True)
         cv2.imshow("heatmap", target.astype(np.uint8))
-        cv2.waitKey(30)
+        cv2.waitKey(0)

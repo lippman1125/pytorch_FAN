@@ -16,6 +16,9 @@ def get_preds(scores):
         return type: torch.LongTensor
     '''
     assert scores.dim() == 4, 'Score maps should be 4-dim'
+    # batch, chn, height, width ===> batch, chn, height*width
+    # chn = 68
+    # height*width = score_map
     maxval, idx = torch.max(scores.view(scores.size(0), scores.size(1), -1), 2)
 
     maxval = maxval.view(scores.size(0), scores.size(1), 1)
@@ -24,6 +27,9 @@ def get_preds(scores):
     preds = idx.repeat(1, 1, 2).float()
 
     # batchsize * numPoints * 2
+    # 0 is x coord
+    # 1 is y coord
+    # shape = batchsize, numPoints, 2
     preds[:, :, 0] = (preds[:, :, 0] - 1) % scores.size(3) + 1
     preds[:, :, 1] = torch.floor((preds[:, :, 1] - 1) / scores.size(2)) + 1
 
@@ -35,6 +41,7 @@ def get_preds(scores):
 def calc_dists(preds, target, normalize):
     preds = preds.float()
     target = target.float()
+    # dists = 68 x batch
     dists = torch.zeros(preds.size(1), preds.size(0))
     for n in range(preds.size(0)):
         for c in range(preds.size(1)):
@@ -58,7 +65,7 @@ def calc_metrics(dists, path='', category=''):
     axes1 = np.linspace(0, 1, 1000)
     axes2 = np.zeros(1000)
     for i in range(1000):
-        axes2[i] = (errors < axes1[i]).sum() / float(errors.size(0))
+        axes2[i] = float((errors < axes1[i]).sum()) / float(errors.size(0))
 
     auc = round(np.sum(axes2[:70]) / .7, 2)
 
@@ -89,6 +96,8 @@ def calc_metrics(dists, path='', category=''):
 
 
 def _get_bboxsize(iterable):
+    # iterable = 68 x 2
+    # torch.min return values, idxs
     mins = torch.min(iterable, 0)[0].view(2)
     maxs = torch.max(iterable, 0)[0].view(2)
 
@@ -104,10 +113,12 @@ def accuracy(output, target, idxs, thr=0.08):
     First value to be returned is accuracy calculated based on overall 'idxs'
     followed by individual accuracies
     '''
+    # preds = batch, 68, 64, 64
     preds = get_preds(output)
     gts = get_preds(target)
     # B * 2
     norm = torch.ones(preds.size(0))
+    # use face bbox to normalize
     for i, gt in enumerate(gts):
         norm[i] = _get_bboxsize(gt)
 
@@ -136,6 +147,8 @@ def final_preds(output, center, scale, res):
     else:
         coords = get_preds(output)  # float type
 
+    # output shape is batch, 68, 64, 64
+    # coords shape is batch, 68, 2
     # pose-processing
     for n in range(coords.size(0)):
         for p in range(coords.size(1)):
