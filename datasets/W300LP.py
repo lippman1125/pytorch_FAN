@@ -80,6 +80,7 @@ class W300LP(data.Dataset):
         c = torch.Tensor((450 / 2, 450 / 2 + 50))
         s = 1.8
 
+        # print(os.path.join(self.img_folder, self.anno[idx].split('_')[0], self.anno[idx][:-7] +'.jpg'))
         img = load_image(
             os.path.join(self.img_folder, self.anno[idx].split('_')[0], self.anno[idx][:-7] +
                          '.jpg'))
@@ -101,20 +102,20 @@ class W300LP(data.Dataset):
         inp = crop(img, c, s, [256, 256], rot=r)
         # inp = color_normalize(inp, self.mean, self.std)
 
-        if self.is_train:
-            tpts = copy.deepcopy(pts)
-            out = torch.zeros(self.nParts, 64, 64)
-            for i in range(self.nParts):
-                if tpts[i, 0] > 0:
-                    tpts[i, 0:2] = to_torch(transform(tpts[i, 0:2] + 1, c, s, [64, 64], rot=r))
-                    out[i] = draw_labelmap(out[i], tpts[i] - 1, sigma=1)
-        else:
-            tpts = copy.deepcopy(pts)
-            out = torch.zeros(self.nParts, 256, 256)
-            for i in range(self.nParts):
-                if tpts[i, 0] > 0:
-                    tpts[i, 0:2] = transform(tpts[i, 0:2] + 1, c, s, [256, 256], rot=r)
-                    out[i] = draw_labelmap(out[i], tpts[i] - 1, sigma=1)
+        #if self.is_train:
+        tpts = copy.deepcopy(pts)
+        out = torch.zeros(self.nParts, 64, 64)
+        for i in range(self.nParts):
+            if tpts[i, 0] > 0:
+                tpts[i, 0:2] = to_torch(transform(tpts[i, 0:2] + 1, c, s, [64, 64], rot=r))
+                out[i] = draw_labelmap(out[i], tpts[i] - 1, sigma=1)
+        #else:
+        #    tpts = copy.deepcopy(pts)
+        #    out = torch.zeros(self.nParts, 256, 256)
+        #    for i in range(self.nParts):
+        #        if tpts[i, 0] > 0:
+        #            tpts[i, 0:2] = transform(tpts[i, 0:2] + 1, c, s, [256, 256], rot=r)
+        #            out[i] = draw_labelmap(out[i], tpts[i] - 1, sigma=1)
 
         return inp, out, tpts, c, s
 

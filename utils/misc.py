@@ -36,7 +36,7 @@ def save_checkpoint(state,
     torch.save(state, filepath)
     scipy.io.savemat(os.path.join(checkpoint, 'preds.mat'), mdict={'preds' : preds})
 
-    if snapshot and state.epoch % snapshot == 0:
+    if snapshot and state['epoch'] % snapshot == 0:
         shutil.copyfile(filepath,
                         os.path.join(checkpoint, 'checkpoint_{}.pth.tar'.format(state.epoch)))
 
@@ -50,7 +50,7 @@ def save_pred(preds, checkpoint='checkpoint', filename='preds_valid.mat'):
     filepath = os.path.join(checkpoint, filename)
     scipy.io.savemat(filepath, mdict={'preds': preds})
 
-
+'''
 def adjust_learning_rate(optimizer, epoch, lr, schedule, gamma):
     """Sets the learning rate to the initial LR decayed by schedule"""
     if epoch in schedule:
@@ -58,3 +58,26 @@ def adjust_learning_rate(optimizer, epoch, lr, schedule, gamma):
         for param_group in optimizer.param_groups:
             param_group['lr'] = lr
     return lr
+'''
+
+def adjust_learning_rate(optimizer, epoch, lr, schedule, gamma):
+    """Sets the learning rate to the initial LR decayed by schedule"""
+    if epoch < 50:
+        lr = 2.5e-4
+    elif epoch < 70:
+        lr = 1e-4
+    elif epoch < 90:
+        lr = 5e-5
+    elif epoch < 100:
+        lr = 1e-5
+    else:
+        lr = 5e-6
+
+    #lr *= gamma
+
+    for param_group in optimizer.param_groups:
+        param_group['lr'] = lr
+    return lr
+
+
+

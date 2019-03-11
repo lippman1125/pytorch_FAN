@@ -9,10 +9,10 @@ def argparser():
     P.add_argument('--seed', type=int, default=0, help='maunlly set RNG seed')
     P.add_argument('--nGpu', type=int, default=1, help='number of gpu(s) to use')
     P.add_argument('--snapshot', type=int, default=3, help='save a snapshot every n epoch(s)')
-    P.add_argument('--epochs', type=int, default=40, help='Number of total epochs to run')
-    P.add_argument('--workers', type=int, default=4, help='number of data loader threads')
+    P.add_argument('--epochs', type=int, default=110, help='Number of total epochs to run')
+    P.add_argument('--workers', type=int, default=32, help='number of data loader threads')
     # for a single GPU.
-    P.add_argument('--train-batch', type=int, default=24, help='minibatch size')
+    P.add_argument('--train-batch', type=int, default=10, help='minibatch size')
     P.add_argument('--val-batch', type=int, default=10, help='minibatch size')
     P.add_argument('-c', '--checkpoint', type=str, default='checkpoint', help='model save path')
     P.add_argument('--resume', type=str, default='', help='resume from lasteset saved checkpoints')
@@ -21,7 +21,7 @@ def argparser():
     P.add_argument('--weight-decay', type=float, default=0.0, help='weight decay')
     P.add_argument('--netType', type=str, default='fan', help='options: fan')
     P.add_argument(
-        '--pointType', type=str, default='2D', choices=['2D', '3D'], help='2D or 3D face alignment')
+        '--pointType', type=str, default='3D', choices=['2D', '3D'], help='2D or 3D face alignment')
     P.add_argument('--nModules', type=int, default=1, help='number of modules per level')
     P.add_argument('--nStacks', type=int, default=4, help='number of stacked network(s)')
     P.add_argument('--use-se', action='store_true', help='use SE layer or not')

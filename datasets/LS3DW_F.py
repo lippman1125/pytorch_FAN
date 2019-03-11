@@ -21,31 +21,67 @@ from utils.transforms import *
 from datasets.W300LP import W300LP
 
 
-class LS3DW(W300LP):
+class LS3DW_F(W300LP):
 
     def __init__(self, args, split):
-        super(LS3DW, self).__init__(args, split)
+        super(LS3DW_F, self).__init__(args, split)
         assert self.pointType == '3D'
 
     def _getDataFaces(self, is_train):
-        base_dir = os.path.join(self.img_folder, 'new_dataset')
-        E, M, H = [], [], []
-        vallines = []
+
         lines = []
+        vallines = []
+
+        # W300LP
+        base_dir = os.path.join(self.img_folder, '300W_LP/landmarks')
+        dirs = os.listdir(base_dir)
+        for d in dirs:
+            files = [f for f in os.listdir(os.path.join(base_dir, d)) if f.endswith('.t7')]
+            for f in files:
+                if f.find('test') == -1:
+                    lines.append(os.path.join(base_dir, d, f))
+                else:
+                    vallines.append(os.path.join(base_dir, d, f))
+        print("300W_LP: {} files".format(len(lines)))
+
+        # 300VW-3D
+        count = 0
+        base_dir = os.path.join(self.img_folder, '300VW-3D')
+        for split in ['CatA', 'CatB', 'CatC', 'Trainset']:
+            sub_dir = os.path.join(base_dir, split)
+            dirs = os.listdir(sub_dir)
+            for d in dirs:
+                files = [f for f in os.listdir(os.path.join(sub_dir, d)) if f.endswith('.t7')]
+                for f in files:
+                    lines.append(os.path.join(sub_dir, d, f))
+                count += len(files)
+        print("300VW-3D: {} files".format(count))
+
+        # 300W-Testset-3D
+        base_dir = os.path.join(self.img_folder, '300W-Testset-3D')
         files = [f for f in os.listdir(base_dir) if f.endswith('.t7')]
         for f in files:
-            num_of_file = int(f.split('.')[0])
-            if num_of_file % 3 == 1:  # 0-30
-                E.append(os.path.join(base_dir, f))
-            elif num_of_file % 3 == 2:  # 30-60
-                M.append(os.path.join(base_dir, f))
-            else:  # 60-90
-                H.append(os.path.join(base_dir, f))
-        vallines.extend(E)
-        vallines.extend(M)
-        vallines.extend(H)
+            lines.append(os.path.join(base_dir, f))
+        print("300W-Testset-3D: {} files".format(len(files)))
+
+
+        # AFLW2000-3D-Reannotated
+        base_dir = os.path.join(self.img_folder, 'AFLW2000-3D-Reannotated')
+        files = [f for f in os.listdir(base_dir) if f.endswith('.t7')]
+        for f in files:
+            lines.append(os.path.join(base_dir, f))
+        print("AFLW2000-3D-Reannotated: {} files".format(len(files)))
+
+        # Menpo-3D
+        base_dir = os.path.join(self.img_folder, 'Menpo-3D')
+        files = [f for f in os.listdir(base_dir) if f.endswith('.t7')]
+        for f in files:
+            lines.append(os.path.join(base_dir, f))
+        print("Menpo-3D: {} files".format(len(files)))
+
         if is_train:
             print('=> loaded train set, {} images were found'.format(len(lines)))
+            random.shuffle(lines)
             return lines
         else:
             print('=> loaded validation set, {} images were found'.format(len(vallines)))
@@ -56,7 +92,11 @@ class LS3DW(W300LP):
         rf = self.rot_factor
 
         main_pts = torchfile.load(self.anno[idx])
-        pts = main_pts
+        dir_list = os.path.dirname(self.anno[idx]).split("/")
+        if "300W_LP" in dir_list:
+            pts = main_pts[1]
+        else:
+            pts = main_pts
         mins_ = torch.min(torch.from_numpy(pts).float(), 0)[0].view(2)  # min vals
         maxs_ = torch.max(torch.from_numpy(pts).float(), 0)[0].view(2)  # max vals
         # print(mins_)
@@ -67,7 +107,18 @@ class LS3DW(W300LP):
         c[1] -= ((maxs_[1] - mins_[1]) * 0.12)
         s = (maxs_[0] - mins_[0] + maxs_[1] - mins_[1]) / 195
 
-        img = load_image(self.anno[idx][:-3] + '.jpg')
+        dir_list = os.path.dirname(self.anno[idx]).split("/")
+        # print(self.anno[idx][:-3])
+        if '300W-Testset-3D' in dir_list:
+            img = load_image(self.anno[idx][:-3] + '.png')
+        elif "300W_LP" in dir_list:
+            img_path = os.path.join(self.img_folder,
+                                    "300W_LP/" + os.path.basename(self.anno[idx]).split('_')[0],
+                                    os.path.basename(self.anno[idx])[:-7] + '.jpg')
+            # print(img_path)
+            img = load_image(img_path)
+        else:
+            img = load_image(self.anno[idx][:-3] + '.jpg')
 
         r = 0
         if self.is_train:
@@ -97,11 +148,11 @@ class LS3DW(W300LP):
                 out[i] = draw_labelmap(out[i], tpts[i] - 1, sigma=1)
         # else:
         #     tpts = copy.deepcopy(pts)
-        #    out = torch.zeros(self.nParts, 256, 256)
-        #    for i in range(self.nParts):
-        #        if tpts[i, 0] > 0:
-        #            tpts[i, 0:2] = transform(tpts[i, 0:2] + 1, c, s, [256, 256], rot=r)
-        #            out[i] = draw_labelmap(out[i], tpts[i] - 1, sigma=1)
+        #     out = torch.zeros(self.nParts, 256, 256)
+        #     for i in range(self.nParts):
+        #         if tpts[i, 0] > 0:
+        #             tpts[i, 0:2] = transform(tpts[i, 0:2] + 1, c, s, [256, 256], rot=r)
+        #             out[i] = draw_labelmap(out[i], tpts[i] - 1, sigma=1)
 
         return inp, out, tpts, c, s
 
@@ -139,39 +190,18 @@ class LS3DW(W300LP):
 if __name__=="__main__":
     import opts
     args = opts.argparser()
-    args.data = "data/LS3D-W"
+    args.data = "/home/lqy/E/LS3D-W"
     args.pointType = '3D'
-    dataset = LS3DW(args, 'test')
+    dataset = LS3DW_F(args, 'train')
     crop_win = None
     for i in range(dataset.__len__()):
-        input, target, meta = dataset.__getitem__(i)
-        # input = input.numpy().transpose(1,2,0)
-        # target = target.numpy()
-        # if crop_win is None:
-        #     crop_win = plt.imshow(input)
-        # else:
-        #     crop_win.set_data(input)
-        # plt.pause(1)
-        # plt.draw
-    # gts, gtfiles = demo.loadgts(args.data, args.pointType)
-    # for i in range(len(gtfiles)):
-    #     if not gtfiles[i] == dataset.anno[i]:
-    #         print(gtfiles[i], dataset.anno[i])
-    #         exit()
-    # print("All file are same")
+        input, target = dataset.__getitem__(i)
+
         input = input.numpy().transpose(1, 2, 0) * 255.
         target = target.numpy().transpose(1, 2, 0) * 255
         input = np.ascontiguousarray(input, dtype=np.uint8)
         target = np.ascontiguousarray(target, dtype=np.uint32)
 
-        # print(np.shape(target))
-        pts = meta["pts"].astype(np.uint8)
-        # print(pts)
-
-        # print(np.shape(input))
-        # print(input.dtype)
-        for i in range(68):
-            cv2.circle(input, (pts[i][0], pts[i][1]), 3, (0, 0, 255), 2)
 
         cv2.imshow("face", input[:, :, ::-1])
         # for i in range(68):

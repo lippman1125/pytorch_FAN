@@ -13,7 +13,7 @@ import torchvision.datasets as datasets
 
 import models
 from models.fan_model import  FAN
-from datasets import W300LP, VW300, AFLW2000, LS3DW
+from datasets import W300LP, VW300, AFLW2000, LS3DW, LS3DW_F
 from utils.logger import Logger, savefig
 from utils.imutils import batch_with_heatmap
 from utils.evaluation import accuracy, AverageMeter, final_preds, calc_metrics, calc_dists
@@ -36,7 +36,8 @@ def get_loader(data):
         '300W_LP': W300LP,
         'LS3D-W/300VW-3D': VW300,
         'AFLW2000': AFLW2000,
-        'LS3D-W': LS3DW,
+        'LS3D-W': LS3DW_F,
+        'LS3D-W-Test': LS3DW
     }[os.path.basename(data)]
 
 
@@ -52,13 +53,15 @@ def main(args):
 
     print("=> Models will be saved at: {}".format(args.checkpoint))
 
-    model = models.__dict__[args.netType](
-        num_stacks=args.nStacks,
-        num_blocks=args.nModules,
-        num_feats=args.nFeats,
-        use_se=args.use_se,
-        use_attention=args.use_attention,
-        num_classes=68)
+    # model = models.__dict__[args.netType](
+    #    num_stacks=args.nStacks,
+    #    num_blocks=args.nModules,
+    #    num_feats=args.nFeats,
+    #    use_se=args.use_se,
+    #    use_attention=args.use_attention,
+    #    num_classes=68)
+    
+    model = FAN(2)
 
     model = torch.nn.DataParallel(model).cuda()
 
@@ -70,6 +73,7 @@ def main(args):
     title = args.checkpoint.split('/')[-1] + ' on ' + args.data.split('/')[-1]
 
     Loader = get_loader(args.data)
+    print(Loader)
 
     val_loader = torch.utils.data.DataLoader(
         Loader(args, 'A'),
@@ -198,7 +202,7 @@ def train(loader, model, criterion, optimizer, netType, debug=False, flip=False)
             loss += criterion(o, target_var)
         acc, _ = accuracy(score_map, target.cpu(), idx, thr=0.07)
 
-        losses.update(loss.data[0], inputs.size(0))
+        losses.update(loss.item(), inputs.size(0))
         acces.update(acc[0], inputs.size(0))
 
         # loss backforward
@@ -280,7 +284,7 @@ def validate(loader, model, criterion, netType, debug, flip):
             plt.pause(.05)
             plt.draw()
 
-        losses.update(loss.data[0], inputs.size(0))
+        losses.update(loss.item(), inputs.size(0))
         acces.update(acc[0], inputs.size(0))
 
         batch_time.update(time.time() - end)
