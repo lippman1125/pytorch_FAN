@@ -36,9 +36,11 @@ def save_checkpoint(state,
     torch.save(state, filepath)
     scipy.io.savemat(os.path.join(checkpoint, 'preds.mat'), mdict={'preds' : preds})
 
+    print("snapshot={}, epoch={}".format(snapshot, state['epoch']))
+    print("{}".format(state['epoch'] % snapshot))
     if snapshot and state['epoch'] % snapshot == 0:
         shutil.copyfile(filepath,
-                        os.path.join(checkpoint, 'checkpoint_{}.pth.tar'.format(state.epoch)))
+                        os.path.join(checkpoint, 'checkpoint_{}.pth.tar'.format(state['epoch'])))
 
     if is_best:
         shutil.copyfile(filepath, os.path.join(checkpoint, 'model_best.pth.tar'))

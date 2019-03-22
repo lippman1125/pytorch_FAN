@@ -5,8 +5,8 @@ set -e
 cd ..
 
 C="checkpoint/fan3d_wo_norm_att"
-Btr=128
-Bte=128
+Btr=32
+Bte=32
 N=128
 Dtr="data/LS3D-W"
 Dte="data/LS3D-W-Test"

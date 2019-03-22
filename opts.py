@@ -8,7 +8,7 @@ def argparser():
     P.add_argument('--data', type=str, default='data/300W_LP', help='path to dataset')
     P.add_argument('--seed', type=int, default=0, help='maunlly set RNG seed')
     P.add_argument('--nGpu', type=int, default=1, help='number of gpu(s) to use')
-    P.add_argument('--snapshot', type=int, default=3, help='save a snapshot every n epoch(s)')
+    P.add_argument('--snapshot', type=int, default=10, help='save a snapshot every n epoch(s)')
     P.add_argument('--epochs', type=int, default=110, help='Number of total epochs to run')
     P.add_argument('--workers', type=int, default=32, help='number of data loader threads')
     # for a single GPU.
@@ -17,7 +17,7 @@ def argparser():
     P.add_argument('-c', '--checkpoint', type=str, default='checkpoint', help='model save path')
     P.add_argument('--resume', type=str, default='', help='resume from lasteset saved checkpoints')
     P.add_argument('--lr', type=float, default=1e-4, help='initial learning rate')
-    P.add_argument('--momentum', type=float, default=0.0, help='momentum')
+    P.add_argument('--momentum', type=float, default=0.9, help='momentum')
     P.add_argument('--weight-decay', type=float, default=0.0, help='weight decay')
     P.add_argument('--netType', type=str, default='fan', help='options: fan')
     P.add_argument(

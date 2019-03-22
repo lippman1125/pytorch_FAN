@@ -143,7 +143,8 @@ def main(args):
             },
             is_best,
             predictions,
-            checkpoint=args.checkpoint)
+            checkpoint=args.checkpoint,
+            snapshot=args.snapshot)
 
     logger.close()
     logger.plot(['AUC'])
