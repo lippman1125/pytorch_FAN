@@ -12,7 +12,7 @@ from models.fan_model import FAN
 
 from utils.evaluation import get_preds
 
-CHECKPOINT_PATH = "./checkpoint/fan3d_wo_norm_att/model_best.pth.tar"
+CHECKPOINT_PATH = "./checkpoint_4Module/fan3d_wo_norm_att/model_best.pth.tar"
 
 # # print(models.__dict__)
 # a = [name for name in models.__dict__]
@@ -152,8 +152,8 @@ args.rot_factor = 30
 
 
 # img = cv2.imread("../face-alignment-pytorch/crop_0.jpg")
-img = cv2.imread("../video_neg_nocluster/1545615288538.mp4_5_4.798749_noglass_26_0_0.237937.jpg")
-# img = cv2.imread("face2.jpg")
+# img = cv2.imread("../video_neg_nocluster/1545615288538.mp4_5_4.798749_noglass_26_0_0.237937.jpg")
+img = cv2.imread("crop_1.jpg")
 img = cv2.resize(img, (256, 256))
 img_trans = np.transpose(img, (2,0,1)).astype(np.float32)
 img_trans2 = copy.deepcopy(img_trans[::-1,:,:])

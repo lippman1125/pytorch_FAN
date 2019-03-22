@@ -128,7 +128,7 @@ def transform_preds(coords, center, scale, res):
     return coords
 
 
-def crop(img, center, scale, res, rot=0):
+def crop(img, center, scale, res=[256, 256], rot=0):
     img = im_to_numpy(img)
 
     # Preprocessing for efficient cropping
