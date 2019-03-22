@@ -119,7 +119,7 @@ def detect(img, net):
 
 def face_detector_init(proto, model):
 
-    caffe.set_mode_gpu()
+    caffe.set_mode_cpu()
     net = caffe.Net(proto, model, caffe.TEST)
 
     return net
